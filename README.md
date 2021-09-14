@@ -1,5 +1,5 @@
 # Doge-Gabh
-GetProcAddressByHash
+GetProcAddressByHash on Disk
 
 
 ```
