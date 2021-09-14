@@ -1,2 +1,33 @@
 # Doge-Gabh
 GetProcAddressByHash
+
+
+```
+import (
+	"crypto/sha1"
+	"fmt"
+	"github.com/timwhitez/Doge-Gabh/pkg/Gabh"
+	"syscall"
+)
+
+func main(){
+	//sha1(sleep)=c3ca5f787365eae0dea86250e27d476406956478
+	sleep_ptr,moduleN,err := gabh.GetFuncPtr("kernel32.dll","c3ca5f787365eae0dea86250e27d476406956478",str2sha1)
+	if err != nil{
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Printf("%s: %x\n",moduleN,sleep_ptr)
+	syscall.Syscall(uintptr(sleep_ptr),1,1000,0,0)
+}
+
+
+func str2sha1(s string) string{
+	h := sha1.New()
+	h.Write([]byte(s))
+	bs := h.Sum(nil)
+	return fmt.Sprintf("%x", bs)
+}
+
+```
