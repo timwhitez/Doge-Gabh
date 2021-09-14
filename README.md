@@ -31,3 +31,9 @@ func str2sha1(s string) string{
 }
 
 ```
+
+
+### ref
+https://github.com/Binject/debug/
+
+https://github.com/C-Sto/BananaPhone
