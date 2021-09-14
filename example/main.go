@@ -3,7 +3,7 @@ package main
 import (
 	"crypto/sha1"
 	"fmt"
-	"github.com/timwhitez/pkg/Gabh"
+	"github.com/timwhitez/Doge-Gabh/pkg/Gabh"
 	"syscall"
 )
 
