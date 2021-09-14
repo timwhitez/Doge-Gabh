@@ -10,7 +10,7 @@ import (
 )
 
 func dllExports(dllname string)(*pe.File, error) {
-	l := string([]byte{'c',':','/','w','i','n','d','o','w','s','/','s','y','s','t','e','m','3','2','/'})+dllname
+	l := string([]byte{'c',':','\\','w','i','n','d','o','w','s','\\','s','y','s','t','e','m','3','2','\\'})+dllname
 	p, e := pe.Open(l)
 	if e != nil {
 		return nil, e
