@@ -9,7 +9,7 @@ import (
 
 func main(){
 	//sha1(sleep)=c3ca5f787365eae0dea86250e27d476406956478
-	sleep_ptr,moduleN,err := gabh.GetFuncPtr("kernel32.dll","c3ca5f787365eae0dea86250e27d476406956478",str2sha1)
+	sleep_ptr,moduleN,err := gabh.GetFuncPtr(string([]byte{'k', 'e', 'r', 'n', 'e','l','3','2','.','d','l','l'}),"c3ca5f787365eae0dea86250e27d476406956478",str2sha1)
 	if err != nil{
 		fmt.Println(err)
 		return
