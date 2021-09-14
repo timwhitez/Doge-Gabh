@@ -1,4 +1,4 @@
-module github.com/timwhitez/Gabh
+module github.com/timwhitez/Doge-Gabh
 
 go 1.16
 
