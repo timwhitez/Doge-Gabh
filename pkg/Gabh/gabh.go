@@ -44,13 +44,15 @@ func GetFuncPtr(moduleName string , funcnamehash string,hash func(string)string)
 	cname, _ := UTF16PtrFromString(moduleName)
 	r1,_,err := GMEx.Call(0,uintptr(unsafe.Pointer(cname)),uintptr(unsafe.Pointer(&phModule)))
 	if r1 != 1 || phModule == 0{
-		fmt.Println(err)
-		return 0,"",err
+		syscall.LoadLibrary(moduleName)
+		r1,_,err = GMEx.Call(0,uintptr(unsafe.Pointer(cname)),uintptr(unsafe.Pointer(&phModule)))
+		if r1 != 1 || phModule == 0 {
+			return 0, "", err
+		}
 	}
 	//get dll exports
 	pef,err := dllExports(moduleName)
 	if err != nil{
-		fmt.Println(err)
 		return 0,"",err
 	}
 	ex,err := pef.Exports()
