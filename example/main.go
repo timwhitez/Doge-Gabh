@@ -9,8 +9,17 @@ import (
 
 func main(){
 	//sha1(sleep)=c3ca5f787365eae0dea86250e27d476406956478
-	//sha1(Sleep)=3cac34e674464c2b62286054cd9a2d2c81149efc
 	sleep_ptr,moduleN,err := gabh.GetFuncPtr(string([]byte{'k', 'e', 'r', 'n', 'e','l','3','2','.','d','l','l'}),"c3ca5f787365eae0dea86250e27d476406956478",str2sha1)
+	if err != nil{
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Printf("%s: %x\n",moduleN,sleep_ptr)
+	syscall.Syscall(uintptr(sleep_ptr),1,1000,0,0)
+	
+	//sha1(Sleep)=3cac34e674464c2b62286054cd9a2d2c81149efc
+	sleep_ptr,moduleN,err = gabh.GetFuncPtr(string([]byte{'k', 'e', 'r', 'n', 'e','l','3','2','.','d','l','l'}),"3cac34e674464c2b62286054cd9a2d2c81149efc",str2sha1)
 	if err != nil{
 		fmt.Println(err)
 		return
