@@ -61,7 +61,7 @@ func GetFuncPtr(moduleName string , funcnamehash string,hash func(string)string)
 	}
 
 	for _, exp := range ex {
-		if hash(exp.Name) == strings.ToLower(funcnamehash) || hash(strings.ToLower(exp.Name)) == strings.ToLower(funcnamehash) {
+		if strings.ToLower(hash(exp.Name)) == strings.ToLower(funcnamehash) || strings.ToLower(hash(strings.ToLower(exp.Name))) == strings.ToLower(funcnamehash) {
 			return uint64(phModule) + uint64(exp.VirtualAddress), exp.Name,nil
 		}
 	}
