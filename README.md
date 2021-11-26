@@ -54,10 +54,6 @@ func Sha256(data []byte)[]byte{
 
 ```
 
-### todo
-- [ ] hash the dll name
-
-
 
 ### ref
 https://github.com/Binject/debug/
