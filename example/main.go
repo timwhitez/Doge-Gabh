@@ -1,7 +1,8 @@
 package main
-
 import (
 	"crypto/sha1"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"github.com/timwhitez/Doge-Gabh/pkg/Gabh"
 	"syscall"
@@ -10,7 +11,7 @@ import (
 
 func main(){
 	//sha1(sleep)=c3ca5f787365eae0dea86250e27d476406956478
-	sleep_ptr,moduleN,err := gabh.GetFuncPtr(string([]byte{'k', 'e', 'r', 'n', 'e','l','3','2','.','d','l','l'}),"c3ca5f787365eae0dea86250e27d476406956478",str2sha1)
+	sleep_ptr,moduleN,err := gabh.GetFuncPtr("kernel32.dll","c3ca5f787365eae0dea86250e27d476406956478",str2sha1)
 	if err != nil{
 		fmt.Println(err)
 		return
@@ -19,8 +20,8 @@ func main(){
 	fmt.Printf("%s: %x\n",moduleN,sleep_ptr)
 	syscall.Syscall(uintptr(sleep_ptr),1,1000,0,0)
 
-	//sha1(Sleep)=3cac34e674464c2b62286054cd9a2d2c81149efc
-	sleep_ptr,moduleN,err = gabh.GetFuncPtr(string([]byte{'k', 'e', 'r', 'n', 'e','l','3','2','.','d','l','l'}),"3cac34e674464c2b62286054cd9a2d2c81149efc",str2sha1)
+	//sha256(sleep)=d466bcf52eb6921b1e747e51bf2cc1441926455ba146ecc477bed1574e44f9c0
+	sleep_ptr,moduleN,err = gabh.GetFuncPtr("kernel32.dll","d466bcf52eb6921b1e747e51bf2cc1441926455ba146ecc477bed1574e44f9c0",Sha256Hex)
 	if err != nil{
 		fmt.Println(err)
 		return
@@ -29,9 +30,7 @@ func main(){
 	fmt.Printf("%s: %x\n",moduleN,sleep_ptr)
 	syscall.Syscall(uintptr(sleep_ptr),1,1000,0,0)
 
-
-
-	//NtDelayExecution
+	//NtDelayExecution by HellsGate
 	sleep1,e := gabh.NtdllHgate("84804f99e2c7ab8aee611d256a085cf4879c4be8",str2sha1)
 	if e != nil {
 		panic(e)
@@ -45,11 +44,20 @@ func main(){
 }
 
 
-
 func str2sha1(s string) string{
-	//s = strings.ToLower(s)
 	h := sha1.New()
 	h.Write([]byte(s))
 	bs := h.Sum(nil)
 	return fmt.Sprintf("%x", bs)
+}
+
+
+func Sha256Hex(s string)string{
+	return hex.EncodeToString(Sha256([]byte(s)))
+}
+
+func Sha256(data []byte)[]byte{
+	digest:=sha256.New()
+	digest.Write(data)
+	return digest.Sum(nil)
 }
