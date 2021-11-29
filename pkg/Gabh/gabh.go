@@ -1,6 +1,8 @@
 package gabh
 
 import (
+	"encoding/binary"
+	"errors"
 	"fmt"
 	"github.com/Binject/debug/pe"
 	"strings"
@@ -67,3 +69,63 @@ func GetFuncPtr(moduleName string , funcnamehash string,hash func(string)string)
 	}
 	return 0,"", fmt.Errorf("could not find function!!! ")
 }
+
+//NtdllHgate takes the exported syscall name and gets the ID it refers to. This function will access the ntdll file _on disk_, and relevant events/logs will be generated for those actions.
+func NtdllHgate(funcname string,hash func(string)string) (uint16, error) {
+	return getSysIDFromDisk(funcname, 0, false,hash)
+}
+
+//getSysIDFromMemory takes values to resolve, and resolves from disk.
+func getSysIDFromDisk(funcname string, ord uint32, useOrd bool,hash func(string)string) (uint16, error) {
+	l := string([]byte{'c',':','\\','w','i','n','d','o','w','s','\\','s','y','s','t','e','m','3','2','\\','n','t','d','l','l','.','d','l','l'})
+	p, e := pe.Open(l)
+	if e != nil {
+		return 0, e
+	}
+	ex, e := p.Exports()
+	for _, exp := range ex {
+		if (useOrd && exp.Ordinal == ord) || // many bothans died for this feature
+			strings.ToLower(hash(exp.Name)) == strings.ToLower(funcname) || strings.ToLower(hash(strings.ToLower(exp.Name))) == strings.ToLower(funcname)  {
+			offset := rvaToOffset(p, exp.VirtualAddress)
+			b, e := p.Bytes()
+			if e != nil {
+				return 0, e
+			}
+			buff := b[offset : offset+10]
+
+			return sysIDFromRawBytes(buff)
+		}
+	}
+	return 0, errors.New("Could not find sID")
+}
+
+//rvaToOffset converts an RVA value from a PE file into the file offset. When using binject/debug, this should work fine even with in-memory files.
+func rvaToOffset(pefile *pe.File, rva uint32) uint32 {
+	for _, hdr := range pefile.Sections {
+		baseoffset := uint64(rva)
+		if baseoffset > uint64(hdr.VirtualAddress) &&
+			baseoffset < uint64(hdr.VirtualAddress+hdr.VirtualSize) {
+			return rva - hdr.VirtualAddress + hdr.Offset
+		}
+	}
+	return rva
+}
+
+//sysIDFromRawBytes takes a byte slice and determines if there is a sysID in the expected location. Returns a MayBeHookedError if the signature does not match.
+func sysIDFromRawBytes(b []byte) (uint16, error) {
+	return binary.LittleEndian.Uint16(b[4:8]), nil
+}
+
+//HgSyscall calls the system function specified by callid with n arguments. Works much the same as syscall.Syscall - return value is the call error code and optional error text. All args are uintptrs to make it easy.
+func HgSyscall(callid uint16, argh ...uintptr) (errcode uint32, err error) {
+	errcode = hgSyscall(callid, argh...)
+
+	if errcode != 0 {
+		err = fmt.Errorf("non-zero return from syscall")
+	}
+	return errcode, err
+}
+
+//Syscall calls the system function specified by callid with n arguments. Works much the same as syscall.Syscall - return value is the call error code and optional error text. All args are uintptrs to make it easy.
+func hgSyscall(callid uint16, argh ...uintptr) (errcode uint32)
+
