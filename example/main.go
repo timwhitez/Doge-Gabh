@@ -37,7 +37,7 @@ func main(){
 		panic(e)
 	}
 
-	fmt.Println(sleep1)
+	fmt.Printf("%s: %x\n","NtDelayExecution Sysid",sleep1)
 	times := -(3000 * 10000)
 
 	//hellsgate syscall
