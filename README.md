@@ -98,6 +98,8 @@ asm_x64.s from https://github.com/C-Sto/BananaPhone
 
 
 ### ref
+https://github.com/timwhitez/Doge-ReMap
+
 https://github.com/Binject/debug/
 
 https://github.com/C-Sto/BananaPhone
