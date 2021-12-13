@@ -16,6 +16,9 @@ import (
 )
 
 func main(){
+	//
+	//	get funcPtr by hash
+	//
 	//sha1(sleep)=c3ca5f787365eae0dea86250e27d476406956478
 	sleep_ptr,moduleN,err := gabh.GetFuncPtr("kernel32.dll","c3ca5f787365eae0dea86250e27d476406956478",str2sha1)
 	if err != nil{
@@ -37,6 +40,9 @@ func main(){
 	syscall.Syscall(uintptr(sleep_ptr),1,1000,0,0)
 
 
+	//
+	//	get unhook ntdll funcPtr by hash
+	//
 	unNt,e := gabh.ReMapNtdll()
 	if e != nil{
 		panic(e)
@@ -49,6 +55,10 @@ func main(){
 	fmt.Printf("%s: %x\n","NtDelayExecution ptr ",NtDelayExecution_ptr)
 	syscall.Syscall(uintptr(NtDelayExecution_ptr),2,0,uintptr(unsafe.Pointer(&times)),0)
 
+
+	//
+	//	get ntdll hellsgate funcPtr by hash
+	//
 	//NtDelayExecution HellsGate
 	sleep1,e := gabh.NtdllHgate("84804f99e2c7ab8aee611d256a085cf4879c4be8",str2sha1)
 	if e != nil {
