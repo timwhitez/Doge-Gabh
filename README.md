@@ -7,9 +7,12 @@ GetProcAddressByHash on Disk
 package main
 import (
 	"crypto/sha1"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
-	"github.com/timwhitez/Doge-Gabh/pkg/Gabh"
+	gabh "github.com/timwhitez/Doge-Gabh/pkg/Gabh"
 	"syscall"
+	"unsafe"
 )
 
 func main(){
@@ -22,7 +25,7 @@ func main(){
 
 	fmt.Printf("%s: %x\n",moduleN,sleep_ptr)
 	syscall.Syscall(uintptr(sleep_ptr),1,1000,0,0)
-	
+
 	//sha256(sleep)=d466bcf52eb6921b1e747e51bf2cc1441926455ba146ecc477bed1574e44f9c0
 	sleep_ptr,moduleN,err = gabh.GetFuncPtr("kernel32.dll","d466bcf52eb6921b1e747e51bf2cc1441926455ba146ecc477bed1574e44f9c0",Sha256Hex)
 	if err != nil{
@@ -32,7 +35,20 @@ func main(){
 
 	fmt.Printf("%s: %x\n",moduleN,sleep_ptr)
 	syscall.Syscall(uintptr(sleep_ptr),1,1000,0,0)
+
+
+	unNt,e := gabh.ReMapNtdll()
+	if e != nil{
+		panic(e)
+	}
 	
+	times := -(3000 * 10000)
+	//NtDelayExecution
+	NtDelayExecution_ptr,_,_ := unNt.GetFuncUnhook("84804f99e2c7ab8aee611d256a085cf4879c4be8",str2sha1)
+
+	fmt.Printf("%s: %x\n","NtDelayExecution ptr ",NtDelayExecution_ptr)
+	syscall.Syscall(uintptr(NtDelayExecution_ptr),2,0,uintptr(unsafe.Pointer(&times)),0)
+
 	//NtDelayExecution HellsGate
 	sleep1,e := gabh.NtdllHgate("84804f99e2c7ab8aee611d256a085cf4879c4be8",str2sha1)
 	if e != nil {
@@ -40,10 +56,11 @@ func main(){
 	}
 
 	fmt.Printf("%s: %x\n","NtDelayExecution Sysid",sleep1)
-	times := -(3000 * 10000)
+
 
 	//hellsgate syscall
 	gabh.HgSyscall(sleep1,0,uintptr(unsafe.Pointer(&times)))
+
 }
 
 
