@@ -3,6 +3,29 @@ GetProcAddressByHash on Disk
 
 #### add directsyscall from bananaphone
 
+
+## Functions
+```
+gabh.GetFuncPtr()
+
+
+gabh.ReMapNtdll()
+
+
+GetFuncUnhook()
+
+
+gabh.NtdllHgate()
+
+
+gabh.HgSyscall()
+
+
+```
+
+## Usage
+
+
 ```
 package main
 import (
