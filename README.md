@@ -80,7 +80,7 @@ func main(){
 
 
 	//
-	//	get ntdll hellsgate funcPtr by hash
+	//	get ntdll hellsgate Sysid by hash
 	//
 	//NtDelayExecution HellsGate
 	sleep1,e := gabh.NtdllHgate("84804f99e2c7ab8aee611d256a085cf4879c4be8",str2sha1)
