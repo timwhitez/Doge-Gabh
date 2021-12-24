@@ -21,6 +21,11 @@ gabh.NtdllHgate()
 gabh.HgSyscall()
 
 
+gabh.Universal()
+
+
+UniversalFindProc()
+
 ```
 
 ## Usage
@@ -39,6 +44,20 @@ import (
 )
 
 func main(){
+	//
+	//	get funcPtr Universal
+	//
+	ntdll, _ := gabh.Universal(str2sha1)
+
+	//str2sha1(NtDelayExecution)
+	sleep, _ := ntdll.UniversalFindProc("84804f99e2c7ab8aee611d256a085cf4879c4be8")
+
+	fmt.Printf("Universal Addr:0x%x\n", sleep)
+
+	fmt.Println("Sleep for 3s")
+	times := -(3000 * 10000)
+	syscall.Syscall(sleep, 2, 0, uintptr(unsafe.Pointer(&times)), 0)
+
 	//
 	//	get funcPtr by hash
 	//
@@ -71,7 +90,7 @@ func main(){
 		panic(e)
 	}
 	
-	times := -(3000 * 10000)
+	times = -(3000 * 10000)
 	//NtDelayExecution
 	NtDelayExecution_ptr,_,_ := unNt.GetFuncUnhook("84804f99e2c7ab8aee611d256a085cf4879c4be8",str2sha1)
 
