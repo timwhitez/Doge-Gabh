@@ -6,24 +6,25 @@ GetProcAddressByHash on Disk
 
 ## Functions
 ```
+//getfunc addr by hash
 gabh.GetFuncPtr()
 
-
+//get remap ntdll
 gabh.ReMapNtdll()
 
-
+////get remap func addr
 GetFuncUnhook()
 
-
+//ntdll halo's gate
 gabh.NtdllHgate()
 
-
+//halo's gate call sysid
 gabh.HgSyscall()
 
-
+//get universal ntdll
 gabh.Universal()
 
-
+//get universal func addr
 UniversalFindProc()
 
 ```
