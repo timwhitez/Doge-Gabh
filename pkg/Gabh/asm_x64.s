@@ -2,7 +2,7 @@
 #define maxargs 16
 //func Syscall(callid uint16, argh ...uintptr) (uint32, error)
 TEXT ·hgSyscall(SB), $0-56
-    NOP
+	NOP
 	XORQ AX,AX
 	NOP
 	MOVW callid+0(FP), AX
@@ -31,7 +31,7 @@ TEXT ·hgSyscall(SB), $0-56
 	NOP
 	JLE	2(PC)
 	INT	$3			// not enough room -> crash
-    NOP
+	NOP
 	// Copy args to the stack.
 	MOVQ	SP, DI
 	NOP
