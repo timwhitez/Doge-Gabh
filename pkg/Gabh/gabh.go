@@ -21,6 +21,7 @@ import (
 const (
 	MEM_COMMIT  = 0x001000
 	MEM_RESERVE = 0x002000
+	IDX         = 32
 )
 
 type unNtd struct {
@@ -321,7 +322,74 @@ func getSysIDFromDisk(funcname string, hash func(string) string) (uint16, error)
 			}
 			buff := b[offset : offset+10]
 
-			return sysIDFromRawBytes(buff)
+			// First opcodes should be :
+			//    MOV R10, RCX
+			//    MOV RAX, <syscall>
+			if buff[0] == 0x4c &&
+				buff[1] == 0x8b &&
+				buff[2] == 0xd1 &&
+				buff[3] == 0xb8 &&
+				buff[6] == 0x00 &&
+				buff[7] == 0x00 {
+				return sysIDFromRawBytes(buff)
+			}
+
+			//if hooked check the neighborhood to find clean syscall
+			if buff[0] == 0xe9 {
+				for idx := uintptr(1); idx <= 500; idx++ {
+					// check neighboring syscall down
+					if *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[0])) + idx*IDX)) == 0x4c &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[1])) + idx*IDX)) == 0x8b &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[2])) + idx*IDX)) == 0xd1 &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[3])) + idx*IDX)) == 0xb8 &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[6])) + idx*IDX)) == 0x00 &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[7])) + idx*IDX)) == 0x00 {
+						buff[4] = *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[4])) + idx*IDX))
+						buff[5] = *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[5])) + idx*IDX))
+						return Uint16Down(buff[4:8], uint16(idx)), nil
+					}
+
+					// check neighboring syscall up
+					if *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[0])) - idx*IDX)) == 0x4c &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[1])) - idx*IDX)) == 0x8b &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[2])) - idx*IDX)) == 0xd1 &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[3])) - idx*IDX)) == 0xb8 &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[6])) - idx*IDX)) == 0x00 &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[7])) - idx*IDX)) == 0x00 {
+						buff[4] = *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[4])) - idx*IDX))
+						buff[5] = *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[5])) - idx*IDX))
+						return Uint16Up(buff[4:8], uint16(idx)), nil
+					}
+				}
+			}
+			if buff[3] == 0xe9 {
+				for idx := uintptr(1); idx <= 500; idx++ {
+					// check neighboring syscall down
+					if *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[0])) + idx*IDX)) == 0x4c &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[1])) + idx*IDX)) == 0x8b &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[2])) + idx*IDX)) == 0xd1 &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[3])) + idx*IDX)) == 0xb8 &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[6])) + idx*IDX)) == 0x00 &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[7])) + idx*IDX)) == 0x00 {
+						buff[4] = *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[4])) + idx*IDX))
+						buff[5] = *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[5])) + idx*IDX))
+						return Uint16Down(buff[4:8], uint16(idx)), nil
+					}
+
+					// check neighboring syscall up
+					if *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[0])) - idx*IDX)) == 0x4c &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[1])) - idx*IDX)) == 0x8b &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[2])) - idx*IDX)) == 0xd1 &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[3])) - idx*IDX)) == 0xb8 &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[6])) - idx*IDX)) == 0x00 &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[7])) - idx*IDX)) == 0x00 {
+						buff[4] = *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[4])) - idx*IDX))
+						buff[5] = *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[5])) - idx*IDX))
+						return Uint16Up(buff[4:8], uint16(idx)), nil
+					}
+				}
+			}
+			return 0, errors.New("Could not find sID")
 		}
 	}
 	return 0, errors.New("Could not find sID")
@@ -342,6 +410,15 @@ func rvaToOffset(pefile *pe.File, rva uint32) uint32 {
 //sysIDFromRawBytes takes a byte slice and determines if there is a sysID in the expected location. Returns a MayBeHookedError if the signature does not match.
 func sysIDFromRawBytes(b []byte) (uint16, error) {
 	return binary.LittleEndian.Uint16(b[4:8]), nil
+}
+
+func Uint16Down(b []byte, idx uint16) uint16 {
+	_ = b[1] // bounds check hint to compiler; see golang.org/issue/14808
+	return uint16(b[0]) - idx | uint16(b[1])<<8
+}
+func Uint16Up(b []byte, idx uint16) uint16 {
+	_ = b[1] // bounds check hint to compiler; see golang.org/issue/14808
+	return uint16(b[0]) + idx | uint16(b[1])<<8
 }
 
 //HgSyscall calls the system function specified by callid with n arguments. Works much the same as syscall.Syscall - return value is the call error code and optional error text. All args are uintptrs to make it easy.
