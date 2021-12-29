@@ -27,6 +27,9 @@ gabh.Universal()
 //get universal func addr
 UniversalFindProc()
 
+//full dll unhooking
+gabh.FullUnhook()
+
 ```
 
 ## Usage
