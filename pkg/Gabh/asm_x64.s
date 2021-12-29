@@ -83,7 +83,7 @@ loadregs:
 //Shout out to C-Sto for helping me solve the issue of  ... alot of this also based on https://golang.org/src/runtime/sys_windows_amd64.s
 #define maxargs2 8
 //func Syscall(callid uint16, argh ...uintptr) (uint32, error)
-TEXT ·NtP(SB), $0-56
+TEXT ·ntP(SB), $0-56
 	NOP
 	XORQ AX,AX
 	NOP

@@ -474,7 +474,7 @@ func FullUnhook(DLLname []string) error {
 		var oldfartcodeperms uintptr
 		regionsize := uintptr(len(bytes))
 		handlez := uintptr(0xffffffffffffffff)
-		runfunc, _ := NPVM(
+		runfunc, _ := npvm(
 			customsyscall,
 			handlez,
 			(*uintptr)(unsafe.Pointer(&dllOffset)),
@@ -491,7 +491,7 @@ func FullUnhook(DLLname []string) error {
 			(*mem)[0] = bytes[i]
 		}
 
-		runfunc, _ = NPVM(
+		runfunc, _ = npvm(
 			customsyscall,
 			handlez,
 			(*uintptr)(unsafe.Pointer(&dllOffset)),
@@ -505,8 +505,8 @@ func FullUnhook(DLLname []string) error {
 	return nil
 }
 
-func NPVM(sysid uint16, processHandle uintptr, baseAddress, regionSize *uintptr, NewProtect uintptr, oldprotect *uintptr) (uint32, error) {
-	return NtP(
+func npvm(sysid uint16, processHandle uintptr, baseAddress, regionSize *uintptr, NewProtect uintptr, oldprotect *uintptr) (uint32, error) {
+	return ntP(
 		sysid,
 		processHandle,
 		uintptr(unsafe.Pointer(baseAddress)),
@@ -523,7 +523,7 @@ func str2sha1(s string) string {
 	return fmt.Sprintf("%x", bs)
 }
 
-func NtP(callid uint16, argh ...uintptr) (errcode uint32, err error)
+func ntP(callid uint16, argh ...uintptr) (errcode uint32, err error)
 
 //Syscall calls the system function specified by callid with n arguments. Works much the same as syscall.Syscall - return value is the call error code and optional error text. All args are uintptrs to make it easy.
 func hgSyscall(callid uint16, argh ...uintptr) (errcode uint32)
