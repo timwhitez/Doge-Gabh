@@ -33,7 +33,7 @@ gabh.FullUnhook()
 ```
 
 ## Usage
-
+https://github.com/timwhitez/Doge-Gabh/tree/main/example
 
 ```
 package main
