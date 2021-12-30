@@ -30,6 +30,9 @@ UniversalFindProc()
 //full dll unhooking
 gabh.FullUnhook()
 
+//Perun's Fart unhooking ntdll
+gabh.PerunsFart()
+
 ```
 
 ## Usage
