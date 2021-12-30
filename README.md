@@ -12,10 +12,10 @@ gabh.ReMapNtdll()
 ////get remap func addr
 GetFuncUnhook()
 
-//ntdll halo's gate
+//ntdll Tartaru's Gate/Halo's Gate
 gabh.NtdllHgate()
 
-//halo's gate call sysid
+//Tartaru's Gate/Halo's Gate call sysid
 gabh.HgSyscall()
 
 //get universal ntdll
