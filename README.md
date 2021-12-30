@@ -156,3 +156,7 @@ https://github.com/C-Sto/BananaPhone
 https://github.com/Binject/universal
 
 https://github.com/trickster0/TartarusGate
+
+https://github.com/plackyhacker/Peruns-Fart
+
+https://github.com/TomOS3/UserModeUnhooking/blob/main/CustomCode/PerunsFart/PerunsFart.cpp
