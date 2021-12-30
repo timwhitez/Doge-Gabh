@@ -1,9 +1,6 @@
 # Doge-Gabh
 GetProcAddressByHash on Disk
 
-#### add directsyscall from bananaphone
-
-
 ## Functions
 ```
 //getfunc addr by hash
