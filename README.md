@@ -159,3 +159,9 @@ https://github.com/trickster0/TartarusGate
 https://github.com/plackyhacker/Peruns-Fart
 
 https://github.com/TomOS3/UserModeUnhooking/blob/main/CustomCode/PerunsFart/PerunsFart.cpp
+
+
+# 🚀Star Trend
+[![Stargazers over time](https://starchart.cc/timwhitez/Doge-Gabh.svg)](https://starchart.cc/timwhitez/Doge-Gabh)
+
+
