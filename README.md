@@ -142,7 +142,7 @@ func Sha256(data []byte)[]byte{
 
 ```
 
-asm_x64.s from https://github.com/C-Sto/BananaPhone
+asm_x64.s mod from https://github.com/C-Sto/BananaPhone
 
 
 ### ref
