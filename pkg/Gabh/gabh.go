@@ -285,9 +285,135 @@ func GetFuncPtr(moduleName string, funcnamehash string, hash func(string) string
 }
 
 //NtdllHgate takes the exported syscall name and gets the ID it refers to. This function will access the ntdll file _on disk_, and relevant events/logs will be generated for those actions.
-func NtdllHgate(funcname string, hash func(string) string) (uint16, error) {
+func DiskHgate(funcname string, hash func(string) string) (uint16, error) {
 	return getSysIDFromDisk(funcname, hash)
 }
+
+//NtdllHgate takes the exported syscall name and gets the ID it refers to. This function will access the ntdll file _on disk_, and relevant events/logs will be generated for those actions.
+func MemHgate(funcname string, hash func(string) string) (uint16, error) {
+	return getSysIDFromMem(funcname, hash)
+}
+
+
+//getSysIDFromMemory takes values to resolve, and resolves from disk.
+func getSysIDFromMem(funcname string, hash func(string) string) (uint16, error) {
+	//Get dll module BaseAddr
+	//get ntdll handler
+	GMH := syscall.NewLazyDLL(string([]byte{'k', 'e', 'r', 'n', 'e', 'l', '3', '2'})).NewProc(string([]byte{'G', 'e', 't', 'M', 'o', 'd', 'u', 'l', 'e', 'H', 'a', 'n', 'd', 'l', 'e', 'A'}))
+	bytes0 := []byte(string([]byte{'n', 't', 'd', 'l', 'l'}))
+	Ntdll, _, _ := GMH.Call(uintptr(unsafe.Pointer(&bytes0[0])))
+	if Ntdll == 0 {
+		return 0,fmt.Errorf("err GetModuleHandleA")
+	}
+	moduleInfo := windows.ModuleInfo{}
+	err := windows.GetModuleInformation(windows.Handle(uintptr(0xffffffffffffffff)), windows.Handle(Ntdll), &moduleInfo, uint32(unsafe.Sizeof(moduleInfo)))
+	if err != nil {
+		return 0, err
+	}
+	addrMod := moduleInfo.BaseOfDll
+
+	//get ntheader of ntdll
+	ntHeader := ntH(addrMod)
+	if ntHeader == nil {
+		return 0,fmt.Errorf("get ntHeader err")
+	}
+	windows.SleepEx(50, false)
+	//get module size of ntdll
+	modSize := ntHeader.OptionalHeader.SizeOfImage
+	if modSize == 0 {
+		return 0,fmt.Errorf("get module size err")
+	}
+	//fmt.Println("ntdll module size: " + strconv.Itoa(int(modSize)))
+
+	rr := rawreader.New(addrMod, int(modSize))
+	p, e := pe.NewFileFromMemory(rr)
+
+	if e != nil {
+			return 0, e
+	}
+	ex, e := p.Exports()
+	for _, exp := range ex {
+		if strings.ToLower(hash(exp.Name)) == strings.ToLower(funcname) || strings.ToLower(hash(strings.ToLower(exp.Name))) == strings.ToLower(funcname) {
+			offset := rvaToOffset(p, exp.VirtualAddress)
+			b, e := p.Bytes()
+			if e != nil {
+				return 0, e
+			}
+			buff := b[offset : offset+10]
+
+			// First opcodes should be :
+			//    MOV R10, RCX
+			//    MOV RAX, <syscall>
+			if buff[0] == 0x4c &&
+				buff[1] == 0x8b &&
+				buff[2] == 0xd1 &&
+				buff[3] == 0xb8 &&
+				buff[6] == 0x00 &&
+				buff[7] == 0x00 {
+				return sysIDFromRawBytes(buff)
+			}
+
+			//if hooked check the neighborhood to find clean syscall
+			if buff[0] == 0xe9 {
+				for idx := uintptr(1); idx <= 500; idx++ {
+					// check neighboring syscall down
+					if *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[0])) + idx*IDX)) == 0x4c &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[1])) + idx*IDX)) == 0x8b &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[2])) + idx*IDX)) == 0xd1 &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[3])) + idx*IDX)) == 0xb8 &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[6])) + idx*IDX)) == 0x00 &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[7])) + idx*IDX)) == 0x00 {
+						buff[4] = *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[4])) + idx*IDX))
+						buff[5] = *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[5])) + idx*IDX))
+						return Uint16Down(buff[4:8], uint16(idx)), nil
+					}
+
+					// check neighboring syscall up
+					if *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[0])) - idx*IDX)) == 0x4c &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[1])) - idx*IDX)) == 0x8b &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[2])) - idx*IDX)) == 0xd1 &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[3])) - idx*IDX)) == 0xb8 &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[6])) - idx*IDX)) == 0x00 &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[7])) - idx*IDX)) == 0x00 {
+						buff[4] = *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[4])) - idx*IDX))
+						buff[5] = *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[5])) - idx*IDX))
+						return Uint16Up(buff[4:8], uint16(idx)), nil
+					}
+				}
+			}
+			if buff[3] == 0xe9 {
+				for idx := uintptr(1); idx <= 500; idx++ {
+					// check neighboring syscall down
+					if *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[0])) + idx*IDX)) == 0x4c &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[1])) + idx*IDX)) == 0x8b &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[2])) + idx*IDX)) == 0xd1 &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[3])) + idx*IDX)) == 0xb8 &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[6])) + idx*IDX)) == 0x00 &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[7])) + idx*IDX)) == 0x00 {
+						buff[4] = *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[4])) + idx*IDX))
+						buff[5] = *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[5])) + idx*IDX))
+						return Uint16Down(buff[4:8], uint16(idx)), nil
+					}
+
+					// check neighboring syscall up
+					if *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[0])) - idx*IDX)) == 0x4c &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[1])) - idx*IDX)) == 0x8b &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[2])) - idx*IDX)) == 0xd1 &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[3])) - idx*IDX)) == 0xb8 &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[6])) - idx*IDX)) == 0x00 &&
+						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[7])) - idx*IDX)) == 0x00 {
+						buff[4] = *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[4])) - idx*IDX))
+						buff[5] = *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[5])) - idx*IDX))
+						return Uint16Up(buff[4:8], uint16(idx)), nil
+					}
+				}
+			}
+			return 0, errors.New("Could not find sID")
+		}
+	}
+	return 0, errors.New("Could not find sID")
+}
+
 
 //getSysIDFromMemory takes values to resolve, and resolves from disk.
 func getSysIDFromDisk(funcname string, hash func(string) string) (uint16, error) {
@@ -378,6 +504,9 @@ func getSysIDFromDisk(funcname string, hash func(string) string) (uint16, error)
 	}
 	return 0, errors.New("Could not find sID")
 }
+
+
+
 
 //rvaToOffset converts an RVA value from a PE file into the file offset. When using binject/debug, this should work fine even with in-memory files.
 func rvaToOffset(pefile *pe.File, rva uint32) uint32 {
@@ -501,7 +630,6 @@ func npvm(sysid uint16, processHandle uintptr, baseAddress, regionSize *uintptr,
 //Perun's Fart unhook function
 //todo: change syscall package into gabh
 func PerunsFart() error {
-
 	//get customsyscall
 	//todo: change registry ops into syscall
 	var customsyscall uint16
