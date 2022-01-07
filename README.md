@@ -13,7 +13,9 @@ gabh.ReMapNtdll()
 GetFuncUnhook()
 
 //ntdll Tartaru's Gate/Halo's Gate
-gabh.NtdllHgate()
+gabh.MemHgate()
+
+gabh.DiskHgate()
 
 //Tartaru's Gate/Halo's Gate call sysid
 gabh.HgSyscall()
@@ -106,7 +108,7 @@ func main(){
 	//	get ntdll hellsgate Sysid by hash
 	//
 	//NtDelayExecution HellsGate
-	sleep1,e := gabh.NtdllHgate("84804f99e2c7ab8aee611d256a085cf4879c4be8",str2sha1)
+	sleep1,e := gabh.DiskHgate("84804f99e2c7ab8aee611d256a085cf4879c4be8",str2sha1)
 	if e != nil {
 		panic(e)
 	}
