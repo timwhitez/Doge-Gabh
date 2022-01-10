@@ -48,6 +48,16 @@ func Universal(hash func(string) string) (*Library, error) {
 	return library, nil
 }
 
+
+func Memset(ptr uintptr, c byte, n uintptr) {
+	var i uintptr
+	for i = 0; i < n; i++ {
+		pByte := (*byte)(unsafe.Pointer(ptr + i))
+		*pByte = c
+	}
+}
+
+
 // LoadLibraryImpl - loads a single library to memory, without trying to check or load required imports
 func LoadLibraryImpl(image *[]byte, hash func(string) string) (*Library, error) {
 	const PtrSize = 32 << uintptr(^uintptr(0)>>63) // are we on a 32bit or 64bit system?
@@ -84,6 +94,8 @@ func LoadLibraryImpl(image *[]byte, hash func(string) string) (*Library, error) 
 	//write to memory
 	CopySections(pelib, image, dst)
 
+	Memset(dst, byte(0), unsafe.Sizeof(IMAGE_NT_HEADERS{})+unsafe.Sizeof(IMAGE_DOS_HEADER{}))
+
 	exports, err := pelib.Exports()
 	if err != nil {
 		return nil, err
@@ -99,6 +111,7 @@ func LoadLibraryImpl(image *[]byte, hash func(string) string) (*Library, error) 
 
 	return &lib, nil
 }
+
 
 // CopySections - writes the sections of a PE image to the given base address in memory
 func CopySections(pefile *pe.File, image *[]byte, loc uintptr) error {
