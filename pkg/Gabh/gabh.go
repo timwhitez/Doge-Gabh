@@ -158,6 +158,7 @@ func CopySections(pefile *pe.File, image *[]byte, loc uintptr) error {
 	return nil
 }
 
+//todo: change VirtualAlloc into Nt api
 func vA(addr uintptr, size, allocType, protect uint32) (uintptr, error) {
 	procVA := syscall.MustLoadDLL(string([]byte{'k', 'e', 'r', 'n', 'e', 'l', '3', '2'})).MustFindProc(string([]byte{'V', 'i', 'r', 't', 'u', 'a', 'l', 'A', 'l', 'l', 'o', 'c'}))
 	r1, _, e1 := procVA.Call(
