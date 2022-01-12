@@ -1,5 +1,5 @@
 # Doge-Gabh
-GetProcAddressByHash/remap/fullunhooking/Tartaru's Gate/universal/perunsfart golang implementation
+GetProcAddressByHash/remap/fullunhooking/Tartaru's Gate/universal golang implementation
 
 ## Functions
 ```
