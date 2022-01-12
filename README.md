@@ -1,5 +1,5 @@
 # Doge-Gabh
-GetProcAddressByHash/remap/fullunhooking/Tartaru's Gate/universal golang implementation
+GetProcAddressByHash/remap/fullunhooking/Tartaru's Gate/universal/Perun's Fart golang implementation
 
 ## Functions
 ```
@@ -28,6 +28,9 @@ UniversalFindProc()
 
 //full dll unhooking
 gabh.FullUnhook()
+
+//Perun's Fart
+gabh.PerunsFart()
 
 ```
 
