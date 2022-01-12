@@ -641,6 +641,9 @@ func npvm(sysid uint16, processHandle uintptr, baseAddress, regionSize *uintptr,
 	)
 }
 
+
+/*
+
 //Perun's Fart unhook function
 //todo: change syscall package into gabh
 func PerunsFart() error {
@@ -799,6 +802,10 @@ func PerunsFart() error {
 	}
 	return nil
 }
+
+ */
+
+
 
 func ntH(baseAddress uintptr) *IMAGE_NT_HEADERS {
 	return (*IMAGE_NT_HEADERS)(unsafe.Pointer(baseAddress + uintptr((*IMAGE_DOS_HEADER)(unsafe.Pointer(baseAddress)).E_lfanew)))
