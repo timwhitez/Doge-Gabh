@@ -1,15 +1,18 @@
 # Doge-Gabh
-GetProcAddressByHash/remap/fullunhooking/Tartaru's Gate/universal/Perun's Fart golang implementation
+GetProcAddressByHash/remap/fullunhooking/Tartaru's Gate/universal/perunsfart golang implementation
 
 ## Functions
 ```
-//getfunc addr by hash
-gabh.GetFuncPtr()
+//getfunc addr by hash from memory
+gabh.MemFuncPtr()
+
+//getfunc addr by hash from disk
+gabh.DiskFuncPtr()
 
 //get remap ntdll
 gabh.ReMapNtdll()
 
-////get remap func addr
+//get remap func addr
 GetFuncUnhook()
 
 //ntdll Tartaru's Gate/Halo's Gate
@@ -29,7 +32,7 @@ UniversalFindProc()
 //full dll unhooking
 gabh.FullUnhook()
 
-//Perun's Fart
+//Perun's Fart unhooking ntdll
 gabh.PerunsFart()
 
 ```
@@ -68,7 +71,7 @@ func main(){
 	//	get funcPtr by hash
 	//
 	//sha1(sleep)=c3ca5f787365eae0dea86250e27d476406956478
-	sleep_ptr,moduleN,err := gabh.GetFuncPtr("kernel32.dll","c3ca5f787365eae0dea86250e27d476406956478",str2sha1)
+	sleep_ptr,moduleN,err := gabh.MemFuncPtr("kernel32.dll","c3ca5f787365eae0dea86250e27d476406956478",str2sha1)
 	if err != nil{
 		fmt.Println(err)
 		return
@@ -78,7 +81,7 @@ func main(){
 	syscall.Syscall(uintptr(sleep_ptr),1,1000,0,0)
 
 	//sha256(sleep)=d466bcf52eb6921b1e747e51bf2cc1441926455ba146ecc477bed1574e44f9c0
-	sleep_ptr,moduleN,err = gabh.GetFuncPtr("kernel32.dll","d466bcf52eb6921b1e747e51bf2cc1441926455ba146ecc477bed1574e44f9c0",Sha256Hex)
+	sleep_ptr,moduleN,err = gabh.DiskFuncPtr("kernel32.dll","d466bcf52eb6921b1e747e51bf2cc1441926455ba146ecc477bed1574e44f9c0",Sha256Hex)
 	if err != nil{
 		fmt.Println(err)
 		return

@@ -113,3 +113,4 @@ type _IMAGE_DOS_HEADER struct { // DOS .EXE header
 }
 
 type IMAGE_DOS_HEADER _IMAGE_DOS_HEADER
+

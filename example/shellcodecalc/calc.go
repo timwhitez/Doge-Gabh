@@ -43,7 +43,7 @@ func main() {
 	if e != nil {
 		panic(e)
 	}
-	pWaitForSingleObject,_,e  := gabh.GetFuncPtr("kernel32.dll",str2sha1("WaitForSingleObject"),str2sha1)
+	pWaitForSingleObject,_,e  := gabh.DiskFuncPtr("kernel32.dll",str2sha1("WaitForSingleObject"),str2sha1)
 	if e != nil {
 		panic(e)
 	}

@@ -9,6 +9,7 @@ import (
 )
 
 func main() {
+
 	ntdll, _ := gabh.Universal(str2sha1)
 
 	//str2sha1(NtDelayExecution)

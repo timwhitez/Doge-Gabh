@@ -23,7 +23,7 @@ func main() {
 	}
 
 	//sha1(sleep)=c3ca5f787365eae0dea86250e27d476406956478
-	sleep_ptr, _, err := gabh.GetFuncPtr("kernel32.dll", "c3ca5f787365eae0dea86250e27d476406956478", str2sha1)
+	sleep_ptr, _, err := gabh.DiskFuncPtr("kernel32.dll", "c3ca5f787365eae0dea86250e27d476406956478", str2sha1)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -32,7 +32,7 @@ func main() {
 	syscall.Syscall(uintptr(sleep_ptr), 1, 3000, 0, 0)
 
 	//NtDelayExecution
-	sleep1, _, err := gabh.GetFuncPtr("ntdll.dll", "84804f99e2c7ab8aee611d256a085cf4879c4be8", str2sha1)
+	sleep1, _, err := gabh.MemFuncPtr("ntdll.dll", "84804f99e2c7ab8aee611d256a085cf4879c4be8", str2sha1)
 	if err != nil {
 		fmt.Println(err)
 		return
