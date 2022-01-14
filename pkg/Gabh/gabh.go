@@ -90,7 +90,7 @@ func LoadLibraryImpl(image *[]byte, hash func(string) string) (*Library, error) 
 	pelib.Relocate(uint64(dst), image)
 
 	//write to memory
-	CopySections(pelib, image, dst)
+	copySections(pelib, image, dst)
 
 	Memset(dst, byte(0), unsafe.Sizeof(IMAGE_NT_HEADERS{})+unsafe.Sizeof(IMAGE_DOS_HEADER{}))
 
@@ -112,7 +112,7 @@ func LoadLibraryImpl(image *[]byte, hash func(string) string) (*Library, error) 
 
 
 // CopySections - writes the sections of a PE image to the given base address in memory
-func CopySections(pefile *pe.File, image *[]byte, loc uintptr) error {
+func copySections(pefile *pe.File, image *[]byte, loc uintptr) error {
 	// Copy Headers
 	var sizeOfHeaders uint32
 	if pefile.Machine == pe.IMAGE_FILE_MACHINE_AMD64 {
@@ -247,7 +247,7 @@ func dllExports(dllname string) (*pe.File, error) {
 
 //import from Memory
 func dllMemExports(dllname string) (*pe.File, error) {
-	r1,r2 := InMemLoads(dllname)
+	r1,r2 := inMemLoads(dllname)
 	rr := rawreader.New(r1, int(r2))
 	p, e := pe.NewFileFromMemory(rr)
 	if e != nil {
@@ -258,7 +258,7 @@ func dllMemExports(dllname string) (*pe.File, error) {
 
 
 //GetModuleLoadedOrder returns the start address of module located at i in the load order. This might be useful if there is a function you need that isn't in ntdll, or if some rude individual has loaded themselves before ntdll.
-func GMLO(i int) (start uintptr, size uintptr, modulepath string) {
+func gMLO(i int) (start uintptr, size uintptr, modulepath string) {
 	var badstring *sstring
 	start, size, badstring = getMLO(i)
 	modulepath = badstring.String()
@@ -267,15 +267,15 @@ func GMLO(i int) (start uintptr, size uintptr, modulepath string) {
 
 
 //InMemLoads returns a map of loaded dll paths to current process offsets (aka images) in the current process. No syscalls are made.
-func InMemLoads(modulename string) (uintptr,uintptr) {
-	s, si, p := GMLO(0)
+func inMemLoads(modulename string) (uintptr,uintptr) {
+	s, si, p := gMLO(0)
 	start := p
 	i := 1
 	if strings.Contains(strings.ToLower(p),strings.ToLower(modulename)){
 		return s,si
 	}
 	for {
-		s, si, p = GMLO(i)
+		s, si, p = gMLO(i)
 		if p != "" {
 			if strings.Contains(strings.ToLower(p),strings.ToLower(modulename)){
 				return s,si
@@ -292,11 +292,11 @@ func InMemLoads(modulename string) (uintptr,uintptr) {
 //MemFuncPtr returns a pointer to the function (Virtual Address)
 func MemFuncPtr(moduleName string, funcnamehash string, hash func(string) string) (uint64, string, error) {
 	//Get dll module BaseAddr
-	phModule,_ := InMemLoads(moduleName)
+	phModule,_ := inMemLoads(moduleName)
 
 	if phModule == 0 {
 		syscall.LoadLibrary(moduleName)
-		phModule,_ = InMemLoads(moduleName)
+		phModule,_ = inMemLoads(moduleName)
 		if  phModule == 0 {
 			return 0, "", fmt.Errorf("Can't Load %s"+moduleName)
 		}
@@ -324,11 +324,11 @@ func MemFuncPtr(moduleName string, funcnamehash string, hash func(string) string
 //DiskFuncPtr returns a pointer to the function (Virtual Address)
 func DiskFuncPtr(moduleName string, funcnamehash string, hash func(string) string) (uint64, string, error) {
 	//Get dll module BaseAddr
-	phModule,_ := InMemLoads(moduleName)
+	phModule,_ := inMemLoads(moduleName)
 
 	if phModule == 0 {
 		syscall.LoadLibrary(moduleName)
-		phModule,_ = InMemLoads(moduleName)
+		phModule,_ = inMemLoads(moduleName)
 		if  phModule == 0 {
 			return 0, "", fmt.Errorf("Can't Load %s"+moduleName)
 		}
@@ -366,7 +366,7 @@ func MemHgate(funcname string, hash func(string) string) (uint16, error) {
 func getSysIDFromMem(funcname string, hash func(string) string) (uint16, error) {
 	//Get dll module BaseAddr
 	//get ntdll handler
-	Ntd, _,_ := GMLO(1)
+	Ntd, _,_ := gMLO(1)
 	if Ntd == 0 {
 		return 0,fmt.Errorf("err GetModuleHandleA")
 	}
@@ -725,7 +725,7 @@ func PerunsFart() error {
 	//if Ntdll == 0 {
 	//	return fmt.Errorf("err GetModuleHandleA")
 	//}
-	Ntd, _,_ := GMLO(1)
+	Ntd, _,_ := gMLO(1)
 
 	//moduleInfo := windows.ModuleInfo{}
 
