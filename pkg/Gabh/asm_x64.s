@@ -41,10 +41,10 @@ TEXT ·hgSyscall(SB), $0-56
 	NOP
 	MOVQ	SP, SI
 	NOP
+loadregs:
 	//move the stack pointer????? why????
 	SUBQ	$8, SP
 	NOP
-loadregs:
 	// Load first 4 args into correspondent registers.
 	//交换位置免杀
 	MOVQ	8(SI), DX
