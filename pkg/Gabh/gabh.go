@@ -55,15 +55,21 @@ func SpfGate(sysid uint16,none []string) (*SPFG,error){
 	i := 0
 
 	for{
+		i++
 		idx := r.Intn(len(apiconst))
 		for strin(apiconst[idx],none){
 			idx = r.Intn(len(apiconst))
 		}
 
-		tmpApi := syscall.NewLazyDLL(string([]byte{'n','t','d','l','l','.','d','l','l'})).NewProc(apiconst[idx]).Addr()
-		if tmpApi == 0{
+		api64,_,_ := MemFuncPtr(string([]byte{'n','t','d','l','l','.','d','l','l'}),str2sha1(apiconst[idx]),str2sha1)
+		if api64 == 0{
+			if i >= apilen{
+				break
+			}
 			continue
 		}
+		tmpApi := uintptr(api64)
+
 		if *(*byte)(unsafe.Pointer(tmpApi)) == 0x4c &&
 			*(*byte)(unsafe.Pointer(tmpApi+1)) == 0x8b &&
 			*(*byte)(unsafe.Pointer(tmpApi+2)) == 0xd1 &&
@@ -76,7 +82,7 @@ func SpfGate(sysid uint16,none []string) (*SPFG,error){
 			newfcg.Fakename = apiconst[idx]
 			return newfcg,nil
 		}
-		i++
+
 		if i >= apilen{
 			break
 		}
