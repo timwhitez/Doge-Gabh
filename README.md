@@ -23,6 +23,11 @@ gabh.DiskHgate()
 //Tartaru's Gate/Halo's Gate call sysid
 gabh.HgSyscall()
 
+
+//Spoofing-Gate
+gabh.SpfGate()
+
+
 //get universal ntdll
 gabh.Universal()
 
@@ -34,6 +39,7 @@ gabh.FullUnhook()
 
 //Perun's Fart unhooking ntdll
 gabh.PerunsFart()
+
 
 ```
 
@@ -164,6 +170,8 @@ https://github.com/trickster0/TartarusGate
 https://github.com/plackyhacker/Peruns-Fart
 
 https://github.com/TomOS3/UserModeUnhooking/blob/main/CustomCode/PerunsFart/PerunsFart.cpp
+
+https://github.com/timwhitez/Spoofing-Gate
 
 
 # 🚀Star Trend
