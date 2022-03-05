@@ -40,6 +40,9 @@ gabh.FullUnhook()
 //Perun's Fart unhooking ntdll
 gabh.PerunsFart()
 
+//full dll unhooking use cmd.exe type
+gabh.CMDUnhook()
+
 
 ```
 
