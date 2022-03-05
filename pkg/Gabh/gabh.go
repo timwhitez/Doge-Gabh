@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
+	"os/exec"
 	"sort"
 	"strconv"
 	"strings"
@@ -20,20 +21,17 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-
-
 type SPFG struct {
-	Fakename	string
-	Pointer		uintptr
-	Fakeid		uint16
-	Realid 		uint16
+	Fakename string
+	Pointer  uintptr
+	Fakeid   uint16
+	Realid   uint16
 }
 
-
-func (f *SPFG)Recover(){
+func (f *SPFG) Recover() {
 	var sysid uint16
 	sysid = f.Realid
-	windows.WriteProcessMemory(0xffffffffffffffff,f.Pointer+4,(*byte)(unsafe.Pointer(&sysid)),2,nil)
+	windows.WriteProcessMemory(0xffffffffffffffff, f.Pointer+4, (*byte)(unsafe.Pointer(&sysid)), 2, nil)
 }
 
 func strin(target string, str_array []string) bool {
@@ -45,7 +43,7 @@ func strin(target string, str_array []string) bool {
 	return false
 }
 
-func SpfGate(sysid uint16,none []string) (*SPFG,error){
+func SpfGate(sysid uint16, none []string) (*SPFG, error) {
 	newfcg := new(SPFG)
 	apilen := len(apiconst)
 	newfcg.Fakeid = sysid
@@ -54,16 +52,16 @@ func SpfGate(sysid uint16,none []string) (*SPFG,error){
 	r := rand.New(s) // initialize local pseudorandom generator
 	i := 0
 
-	for{
+	for {
 		i++
 		idx := r.Intn(len(apiconst))
-		for strin(apiconst[idx],none){
+		for strin(apiconst[idx], none) {
 			idx = r.Intn(len(apiconst))
 		}
 
-		api64,_,_ := MemFuncPtr(string([]byte{'n','t','d','l','l','.','d','l','l'}),str2sha1(apiconst[idx]),str2sha1)
-		if api64 == 0{
-			if i >= apilen{
+		api64, _, _ := MemFuncPtr(string([]byte{'n', 't', 'd', 'l', 'l', '.', 'd', 'l', 'l'}), str2sha1(apiconst[idx]), str2sha1)
+		if api64 == 0 {
+			if i >= apilen {
 				break
 			}
 			continue
@@ -71,25 +69,24 @@ func SpfGate(sysid uint16,none []string) (*SPFG,error){
 		tmpApi := uintptr(api64)
 
 		if *(*byte)(unsafe.Pointer(tmpApi)) == 0x4c &&
-			*(*byte)(unsafe.Pointer(tmpApi+1)) == 0x8b &&
-			*(*byte)(unsafe.Pointer(tmpApi+2)) == 0xd1 &&
-			*(*byte)(unsafe.Pointer(tmpApi+3)) == 0xb8 &&
-			*(*byte)(unsafe.Pointer(tmpApi+6)) == 0x00 &&
-			*(*byte)(unsafe.Pointer(tmpApi+7)) == 0x00 {
-			newfcg.Realid = uint16(*(*byte)(unsafe.Pointer(tmpApi+4))) | uint16(*(*byte)(unsafe.Pointer(tmpApi+5)))<<8
-			windows.WriteProcessMemory(0xffffffffffffffff,tmpApi+4,(*byte)(unsafe.Pointer(&sysid)),2,nil)
+			*(*byte)(unsafe.Pointer(tmpApi + 1)) == 0x8b &&
+			*(*byte)(unsafe.Pointer(tmpApi + 2)) == 0xd1 &&
+			*(*byte)(unsafe.Pointer(tmpApi + 3)) == 0xb8 &&
+			*(*byte)(unsafe.Pointer(tmpApi + 6)) == 0x00 &&
+			*(*byte)(unsafe.Pointer(tmpApi + 7)) == 0x00 {
+			newfcg.Realid = uint16(*(*byte)(unsafe.Pointer(tmpApi + 4))) | uint16(*(*byte)(unsafe.Pointer(tmpApi + 5)))<<8
+			windows.WriteProcessMemory(0xffffffffffffffff, tmpApi+4, (*byte)(unsafe.Pointer(&sysid)), 2, nil)
 			newfcg.Pointer = tmpApi
 			newfcg.Fakename = apiconst[idx]
-			return newfcg,nil
+			return newfcg, nil
 		}
 
-		if i >= apilen{
+		if i >= apilen {
 			break
 		}
 	}
-	return newfcg,fmt.Errorf("tmpApi found Err")
+	return newfcg, fmt.Errorf("tmpApi found Err")
 }
-
 
 func (l *Library) UniversalFindProc(funcname string) (uintptr, error) {
 	v, ok := l.Exports[strings.ToLower(funcname)]
@@ -119,7 +116,6 @@ func Universal(hash func(string) string) (*Library, error) {
 	return library, nil
 }
 
-
 func Memset(ptr uintptr, c byte, n uintptr) {
 	var i uintptr
 	for i = 0; i < n; i++ {
@@ -127,7 +123,6 @@ func Memset(ptr uintptr, c byte, n uintptr) {
 		*pByte = c
 	}
 }
-
 
 // LoadLibraryImpl - loads a single library to memory, without trying to check or load required imports
 func LoadLibraryImpl(image *[]byte, hash func(string) string) (*Library, error) {
@@ -184,7 +179,6 @@ func LoadLibraryImpl(image *[]byte, hash func(string) string) (*Library, error) 
 	return &lib, nil
 }
 
-
 // CopySections - writes the sections of a PE image to the given base address in memory
 func copySections(pefile *pe.File, image *[]byte, loc uintptr) error {
 	// Copy Headers
@@ -231,18 +225,17 @@ func copySections(pefile *pe.File, image *[]byte, loc uintptr) error {
 }
 
 //NtAllocateVirtualMemory
-func NvA(addr , size uintptr, allocType, protect uint32) (uintptr, error) {
-	procVA,_,e := DiskFuncPtr(string([]byte{'n', 't', 'd', 'l', 'l', '.', 'd', 'l', 'l'}),"04262a7943514ab931287729e862ca663d81f515",str2sha1)
-	if procVA == 0{
-		return 0,e
+func NvA(addr, size uintptr, allocType, protect uint32) (uintptr, error) {
+	procVA, _, e := DiskFuncPtr(string([]byte{'n', 't', 'd', 'l', 'l', '.', 'd', 'l', 'l'}), "04262a7943514ab931287729e862ca663d81f515", str2sha1)
+	if procVA == 0 {
+		return 0, e
 	}
-	r,_,e :=syscall.Syscall6(uintptr(procVA),6,uintptr(0xffffffffffffffff),uintptr(unsafe.Pointer(&addr)),0,uintptr(unsafe.Pointer(&size)),uintptr(allocType),uintptr(protect))
-	if r != 0{
-		return 0,e
+	r, _, e := syscall.Syscall6(uintptr(procVA), 6, uintptr(0xffffffffffffffff), uintptr(unsafe.Pointer(&addr)), 0, uintptr(unsafe.Pointer(&size)), uintptr(allocType), uintptr(protect))
+	if r != 0 {
+		return 0, e
 	}
 	return addr, nil
 }
-
 
 func ReMapNtdll() (*unNtd, error) {
 	var uNTD = &unNtd{}
@@ -321,7 +314,7 @@ func dllExports(dllname string) (*pe.File, error) {
 
 //import from Memory
 func dllMemExports(dllname string) (*pe.File, error) {
-	r1,r2 := inMemLoads(dllname)
+	r1, r2 := inMemLoads(dllname)
 	rr := rawreader.New(r1, int(r2))
 	p, e := pe.NewFileFromMemory(rr)
 	if e != nil {
@@ -329,7 +322,6 @@ func dllMemExports(dllname string) (*pe.File, error) {
 	}
 	return p, nil
 }
-
 
 //GetModuleLoadedOrder returns the start address of module located at i in the load order. This might be useful if there is a function you need that isn't in ntdll, or if some rude individual has loaded themselves before ntdll.
 func gMLO(i int) (start uintptr, size uintptr, modulepath string) {
@@ -339,20 +331,19 @@ func gMLO(i int) (start uintptr, size uintptr, modulepath string) {
 	return
 }
 
-
 //InMemLoads returns a map of loaded dll paths to current process offsets (aka images) in the current process. No syscalls are made.
-func inMemLoads(modulename string) (uintptr,uintptr) {
+func inMemLoads(modulename string) (uintptr, uintptr) {
 	s, si, p := gMLO(0)
 	start := p
 	i := 1
-	if strings.Contains(strings.ToLower(p),strings.ToLower(modulename)){
-		return s,si
+	if strings.Contains(strings.ToLower(p), strings.ToLower(modulename)) {
+		return s, si
 	}
 	for {
 		s, si, p = gMLO(i)
 		if p != "" {
-			if strings.Contains(strings.ToLower(p),strings.ToLower(modulename)){
-				return s,si
+			if strings.Contains(strings.ToLower(p), strings.ToLower(modulename)) {
+				return s, si
 			}
 		}
 		if p == start {
@@ -360,19 +351,19 @@ func inMemLoads(modulename string) (uintptr,uintptr) {
 		}
 		i++
 	}
-	return 0,0
+	return 0, 0
 }
 
 //MemFuncPtr returns a pointer to the function (Virtual Address)
 func MemFuncPtr(moduleName string, funcnamehash string, hash func(string) string) (uint64, string, error) {
 	//Get dll module BaseAddr
-	phModule,_ := inMemLoads(moduleName)
+	phModule, _ := inMemLoads(moduleName)
 
 	if phModule == 0 {
 		syscall.LoadLibrary(moduleName)
-		phModule,_ = inMemLoads(moduleName)
-		if  phModule == 0 {
-			return 0, "", fmt.Errorf("Can't Load %s"+moduleName)
+		phModule, _ = inMemLoads(moduleName)
+		if phModule == 0 {
+			return 0, "", fmt.Errorf("Can't Load %s" + moduleName)
 		}
 	}
 	//get dll exports
@@ -393,18 +384,16 @@ func MemFuncPtr(moduleName string, funcnamehash string, hash func(string) string
 	return 0, "", fmt.Errorf("could not find function!!! ")
 }
 
-
-
 //DiskFuncPtr returns a pointer to the function (Virtual Address)
 func DiskFuncPtr(moduleName string, funcnamehash string, hash func(string) string) (uint64, string, error) {
 	//Get dll module BaseAddr
-	phModule,_ := inMemLoads(moduleName)
+	phModule, _ := inMemLoads(moduleName)
 
 	if phModule == 0 {
 		syscall.LoadLibrary(moduleName)
-		phModule,_ = inMemLoads(moduleName)
-		if  phModule == 0 {
-			return 0, "", fmt.Errorf("Can't Load %s"+moduleName)
+		phModule, _ = inMemLoads(moduleName)
+		if phModule == 0 {
+			return 0, "", fmt.Errorf("Can't Load %s" + moduleName)
 		}
 	}
 	//get dll exports
@@ -435,14 +424,13 @@ func MemHgate(funcname string, hash func(string) string) (uint16, error) {
 	return getSysIDFromMem(funcname, hash)
 }
 
-
 //getSysIDFromMemory takes values to resolve, and resolves from disk.
 func getSysIDFromMem(funcname string, hash func(string) string) (uint16, error) {
 	//Get dll module BaseAddr
 	//get ntdll handler
-	Ntd, _,_ := gMLO(1)
+	Ntd, _, _ := gMLO(1)
 	if Ntd == 0 {
-		return 0,fmt.Errorf("err GetModuleHandleA")
+		return 0, fmt.Errorf("err GetModuleHandleA")
 	}
 	//moduleInfo := windows.ModuleInfo{}
 	//err := windows.GetModuleInformation(windows.Handle(uintptr(0xffffffffffffffff)), windows.Handle(Ntd), &moduleInfo, uint32(unsafe.Sizeof(moduleInfo)))
@@ -456,13 +444,13 @@ func getSysIDFromMem(funcname string, hash func(string) string) (uint16, error) 
 	//get ntheader of ntdll
 	ntHeader := ntH(addrMod)
 	if ntHeader == nil {
-		return 0,fmt.Errorf("get ntHeader err")
+		return 0, fmt.Errorf("get ntHeader err")
 	}
 	windows.SleepEx(50, false)
 	//get module size of ntdll
 	modSize := ntHeader.OptionalHeader.SizeOfImage
 	if modSize == 0 {
-		return 0,fmt.Errorf("get module size err")
+		return 0, fmt.Errorf("get module size err")
 	}
 	//fmt.Println("ntdll module size: " + strconv.Itoa(int(modSize)))
 
@@ -470,7 +458,7 @@ func getSysIDFromMem(funcname string, hash func(string) string) (uint16, error) 
 	p, e := pe.NewFileFromMemory(rr)
 
 	if e != nil {
-			return 0, e
+		return 0, e
 	}
 	ex, e := p.Exports()
 	for _, exp := range ex {
@@ -492,7 +480,7 @@ func getSysIDFromMem(funcname string, hash func(string) string) (uint16, error) 
 				buff[6] == 0x00 &&
 				buff[7] == 0x00 {
 				return sysIDFromRawBytes(buff)
-			}else {
+			} else {
 				for idx := uintptr(1); idx <= 500; idx++ {
 					// check neighboring syscall down
 					if *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[0])) + idx*IDX)) == 0x4c &&
@@ -525,7 +513,6 @@ func getSysIDFromMem(funcname string, hash func(string) string) (uint16, error) 
 	}
 	return 0, errors.New("Could not find sID")
 }
-
 
 //getSysIDFromMemory takes values to resolve, and resolves from disk.
 func getSysIDFromDisk(funcname string, hash func(string) string) (uint16, error) {
@@ -554,7 +541,7 @@ func getSysIDFromDisk(funcname string, hash func(string) string) (uint16, error)
 				buff[6] == 0x00 &&
 				buff[7] == 0x00 {
 				return sysIDFromRawBytes(buff)
-			}else {
+			} else {
 				for idx := uintptr(1); idx <= 500; idx++ {
 					// check neighboring syscall down
 					if *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[0])) + idx*IDX)) == 0x4c &&
@@ -586,7 +573,6 @@ func getSysIDFromDisk(funcname string, hash func(string) string) (uint16, error)
 	}
 	return 0, errors.New("Could not find sID")
 }
-
 
 //rvaToOffset converts an RVA value from a PE file into the file offset. When using binject/debug, this should work fine even with in-memory files.
 func rvaToOffset(pefile *pe.File, rva uint32) uint32 {
@@ -663,7 +649,64 @@ func FullUnhook(DLLname []string) error {
 			(*mem)[0] = bytes[i]
 		}
 
-		runfunc= npvm(
+		runfunc = npvm(
+			handlez,
+			(*uintptr)(unsafe.Pointer(&dllOffset)),
+			&regionsize,
+			oldfartcodeperms,
+			&oldfartcodeperms,
+		)
+		if runfunc != 0 {
+			panic(runfunc)
+		}
+	}
+	return nil
+}
+
+func CMDUnhook(DLLname []string) error {
+	for _, d := range DLLname {
+		cmd := exec.Command("cmd.exe", "/c", "type "+d)
+		cmd.SysProcAttr = &syscall.SysProcAttr{
+			HideWindow: true,
+		}
+		mdbyte, e := cmd.Output()
+		if e != nil {
+			return e
+		}
+		file, error1 := pe.NewFile(bytes.NewReader(mdbyte))
+		if error1 != nil {
+			return error1
+		}
+		x := file.Section(string([]byte{'.', 't', 'e', 'x', 't'}))
+		bytes := mdbyte[x.Offset:x.Size]
+		loaddll, error2 := windows.LoadDLL(d)
+		if error2 != nil {
+			return error2
+		}
+		handle := loaddll.Handle
+		dllBase := uintptr(handle)
+		dllOffset := uint(dllBase) + uint(x.VirtualAddress)
+		var oldfartcodeperms uintptr
+		regionsize := uintptr(len(bytes))
+		handlez := uintptr(0xffffffffffffffff)
+		runfunc := npvm(
+			handlez,
+			(*uintptr)(unsafe.Pointer(&dllOffset)),
+			&regionsize,
+			syscall.PAGE_EXECUTE_READWRITE,
+			&oldfartcodeperms,
+		)
+		if runfunc != 0 {
+			panic(runfunc)
+		}
+
+		for i := 0; i < len(bytes); i++ {
+			loc := uintptr(dllOffset + uint(i))
+			mem := (*[1]byte)(unsafe.Pointer(loc))
+			(*mem)[0] = bytes[i]
+		}
+
+		runfunc = npvm(
 			handlez,
 			(*uintptr)(unsafe.Pointer(&dllOffset)),
 			&regionsize,
@@ -679,8 +722,8 @@ func FullUnhook(DLLname []string) error {
 
 func npvm(processHandle uintptr, baseAddress, regionSize *uintptr, NewProtect uintptr, oldprotect *uintptr) uint32 {
 	//NtProtectVirtualMemory
-	sysid,_ := DiskHgate("646bd5afa7b482fdd90fb8f2eefe1301a867d7b9",str2sha1)
-	if sysid == 0{
+	sysid, _ := DiskHgate("646bd5afa7b482fdd90fb8f2eefe1301a867d7b9", str2sha1)
+	if sysid == 0 {
 		return 0
 	}
 	errcode := hgSyscall(
@@ -694,7 +737,6 @@ func npvm(processHandle uintptr, baseAddress, regionSize *uintptr, NewProtect ui
 
 	return errcode
 }
-
 
 //Perun's Fart unhook function
 //todo: change syscall package into gabh
@@ -740,7 +782,7 @@ func PerunsFart() error {
 	//if Ntdll == 0 {
 	//	return fmt.Errorf("err GetModuleHandleA")
 	//}
-	Ntd, _,_ := gMLO(1)
+	Ntd, _, _ := gMLO(1)
 
 	//moduleInfo := windows.ModuleInfo{}
 
@@ -761,7 +803,7 @@ func PerunsFart() error {
 	if ntHeader == nil {
 		return fmt.Errorf("get ntHeader err")
 	}
-	fmt.Printf("ModuleBase: 0x%x\n",addrMod)
+	fmt.Printf("ModuleBase: 0x%x\n", addrMod)
 
 	windows.SleepEx(50, false)
 
@@ -782,7 +824,7 @@ func PerunsFart() error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Read: %d\n",lpNumberOfBytesRead)
+	fmt.Printf("Read: %d\n", lpNumberOfBytesRead)
 
 	e := syscall.TerminateProcess(pi.Process, 0)
 	if e != nil {
@@ -795,7 +837,7 @@ func PerunsFart() error {
 
 	fmt.Println("[+] Done ")
 
-	pe0,_ := pe.NewFileFromMemory(bytes.NewReader(cache))
+	pe0, _ := pe.NewFileFromMemory(bytes.NewReader(cache))
 
 	//ntHdrs   := ntH(uintptr(unsafe.Pointer(&dll[0])))
 
@@ -804,99 +846,97 @@ func PerunsFart() error {
 
 	SecHdr := pe0.Section(string([]byte{'.', 't', 'e', 'x', 't'}))
 	//secHdr := (*SectionHeader)(unsafe.Pointer(&pCurrentSection))
-/*
+	/*
 
-	for i := 0; i < int(ntHdrs.FileHeader.NumberOfSections); i++{
-		secHdr = (*SectionHeader)(unsafe.Pointer(&pCurrentSection))
-		if strings.Contains(secHdr.Name, ".text"){
-			fmt.Printf("[+] .text section is at 0x%x\n",pCurrentSection)
-			break
+		for i := 0; i < int(ntHdrs.FileHeader.NumberOfSections); i++{
+			secHdr = (*SectionHeader)(unsafe.Pointer(&pCurrentSection))
+			if strings.Contains(secHdr.Name, ".text"){
+				fmt.Printf("[+] .text section is at 0x%x\n",pCurrentSection)
+				break
+			}
+			sizeOfSection := unsafe.Sizeof(pe.SectionHeader{})
+			pCurrentSection += sizeOfSection
 		}
-		sizeOfSection := unsafe.Sizeof(pe.SectionHeader{})
-		pCurrentSection += sizeOfSection
-	}
 
- */
+	*/
 
-	fmt.Printf("Section VirtualSize: %d\n",SecHdr.VirtualSize)
+	fmt.Printf("Section VirtualSize: %d\n", SecHdr.VirtualSize)
 
-	startOffset := findFirstSyscallOffset(cache,int(SecHdr.VirtualSize), addrMod)
+	startOffset := findFirstSyscallOffset(cache, int(SecHdr.VirtualSize), addrMod)
 
-	endOffset := findLastSyscallOffset(cache,int(SecHdr.VirtualSize), addrMod)
+	endOffset := findLastSyscallOffset(cache, int(SecHdr.VirtualSize), addrMod)
 
 	cleanSyscalls := cache[startOffset:endOffset]
 
 	var writenum uintptr
 	//writeprocessmemory will set virtualProtect
-	e =windows.WriteProcessMemory(0xffffffffffffffff,addrMod+uintptr(startOffset),&cleanSyscalls[0],uintptr(len(cleanSyscalls)),&writenum)
-	if e != nil{
+	e = windows.WriteProcessMemory(0xffffffffffffffff, addrMod+uintptr(startOffset), &cleanSyscalls[0], uintptr(len(cleanSyscalls)), &writenum)
+	if e != nil {
 		return e
 	}
 
-	fmt.Printf("Write %d\n",writenum)
+	fmt.Printf("Write %d\n", writenum)
 
 	/*
-	var lpflOldProtect uint32
-	e = windows.VirtualProtect(addrMod+uintptr(startOffset),uintptr(len(cleanSyscalls)),windows.PAGE_EXECUTE_READWRITE,&lpflOldProtect)
-	if e != nil{
-		return e
-	}
+		var lpflOldProtect uint32
+		e = windows.VirtualProtect(addrMod+uintptr(startOffset),uintptr(len(cleanSyscalls)),windows.PAGE_EXECUTE_READWRITE,&lpflOldProtect)
+		if e != nil{
+			return e
+		}
 
-	memcpy(addrMod+uintptr(startOffset),cleanSyscalls)
+		memcpy(addrMod+uintptr(startOffset),cleanSyscalls)
 
-	e = windows.VirtualProtect(addrMod+uintptr(startOffset),uintptr(len(cleanSyscalls)),lpflOldProtect,&lpflOldProtect)
-	if e != nil{
-		return e
-	}
+		e = windows.VirtualProtect(addrMod+uintptr(startOffset),uintptr(len(cleanSyscalls)),lpflOldProtect,&lpflOldProtect)
+		if e != nil{
+			return e
+		}
 
-	 */
+	*/
 
 	return nil
 
 }
 
-func findFirstSyscallOffset(pMem []byte,size int,moduleAddress uintptr) int {
+func findFirstSyscallOffset(pMem []byte, size int, moduleAddress uintptr) int {
 	offset := 0
-	pattern1 := []byte{ 0x0f, 0x05, 0xc3 }
-	pattern2 := []byte{ 0xcc, 0xcc, 0xcc }
+	pattern1 := []byte{0x0f, 0x05, 0xc3}
+	pattern2 := []byte{0xcc, 0xcc, 0xcc}
 
 	// find first occurance of syscall+ret instructions
-	for i:=0; i < size - 3; i++{
-		instructions := []byte{pMem[i], pMem[i + 1], pMem[i + 2]}
+	for i := 0; i < size-3; i++ {
+		instructions := []byte{pMem[i], pMem[i+1], pMem[i+2]}
 
-		if instructions[0] == pattern1[0] && instructions[1] == pattern1[1] && instructions[2] == pattern1[2]{
+		if instructions[0] == pattern1[0] && instructions[1] == pattern1[1] && instructions[2] == pattern1[2] {
 			offset = i
 			break
 		}
 	}
 
-
 	// find the beginning of the syscall
-	for i := 3; i < 50; i++{
-		instructions := []byte{ pMem[offset - i], pMem[offset - i + 1], pMem[offset - i + 2] }
-		if instructions[0] == pattern2[0] && instructions[1] == pattern2[1] && instructions[2] == pattern2[2]{
+	for i := 3; i < 50; i++ {
+		instructions := []byte{pMem[offset-i], pMem[offset-i+1], pMem[offset-i+2]}
+		if instructions[0] == pattern2[0] && instructions[1] == pattern2[1] && instructions[2] == pattern2[2] {
 			offset = offset - i + 3
 			break
 		}
 	}
 
-	addr := moduleAddress+uintptr(offset)
+	addr := moduleAddress + uintptr(offset)
 
 	fmt.Printf("[+] First syscall found at offset: 0x%x, addr: 0x%x\n", offset, addr)
 
 	return offset
 }
 
-
-func findLastSyscallOffset(pMem []byte,size int,moduleAddress uintptr) int {
+func findLastSyscallOffset(pMem []byte, size int, moduleAddress uintptr) int {
 
 	offset := 0
-	pattern := []byte{ 0x0f, 0x05, 0xc3, 0xcd, 0x2e, 0xc3, 0xcc, 0xcc, 0xcc }
+	pattern := []byte{0x0f, 0x05, 0xc3, 0xcd, 0x2e, 0xc3, 0xcc, 0xcc, 0xcc}
 
-	for i := size - 9; i > 0; i--{
-		instructions := []byte{ pMem[i], pMem[i + 1], pMem[i + 2], pMem[i + 3], pMem[i + 4], pMem[i + 5], pMem[i + 6], pMem[i + 7], pMem[i + 8] }
+	for i := size - 9; i > 0; i-- {
+		instructions := []byte{pMem[i], pMem[i+1], pMem[i+2], pMem[i+3], pMem[i+4], pMem[i+5], pMem[i+6], pMem[i+7], pMem[i+8]}
 
-		if instructions[0] == pattern[0] && instructions[1] == pattern[1] && instructions[2] == pattern[2]{
+		if instructions[0] == pattern[0] && instructions[1] == pattern[1] && instructions[2] == pattern[2] {
 			offset = i + 6
 			break
 		}
@@ -914,7 +954,6 @@ func memcpy(base uintptr, buf []byte) {
 		*(*byte)(unsafe.Pointer(base + uintptr(i))) = buf[i]
 	}
 }
-
 
 func ntH(baseAddress uintptr) *IMAGE_NT_HEADERS {
 	return (*IMAGE_NT_HEADERS)(unsafe.Pointer(baseAddress + uintptr((*IMAGE_DOS_HEADER)(unsafe.Pointer(baseAddress)).E_lfanew)))
@@ -937,7 +976,6 @@ type sstring struct {
 func (s sstring) String() string {
 	return windows.UTF16PtrToString(s.PWstr)
 }
-
 
 //Syscall calls the system function specified by callid with n arguments. Works much the same as syscall.Syscall - return value is the call error code and optional error text. All args are uintptrs to make it easy.
 func hgSyscall(callid uint16, argh ...uintptr) (errcode uint32)
