@@ -23,6 +23,10 @@ gabh.DiskHgate()
 //Tartaru's Gate/Halo's Gate call sysid
 gabh.HgSyscall()
 
+eggreplace.FindAndReplace()
+
+//Tartaru's Gate/Halo's Gate call sysid more EGG
+gabh.EggCall()
 
 //Spoofing-Gate
 gabh.SpfGate()
