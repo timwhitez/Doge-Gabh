@@ -182,6 +182,7 @@ https://github.com/timwhitez/Spoofing-Gate
 
 https://klezvirus.github.io/RedTeaming/AV_Evasion/NoSysWhisper/
 
+https://github.com/klezVirus/SysWhispers3
 
 # 🚀Star Trend
 [![Stargazers over time](https://starchart.cc/timwhitez/Doge-Gabh.svg)](https://starchart.cc/timwhitez/Doge-Gabh)
