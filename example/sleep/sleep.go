@@ -1,13 +1,19 @@
 package main
+
 import (
+	"bufio"
 	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"github.com/timwhitez/Doge-Gabh/pkg/Gabh"
+	"github.com/timwhitez/Doge-Gabh/pkg/eggreplace"
+	"os"
+	"reflect"
 	"syscall"
 	"unsafe"
 )
+
 
 func main(){
 	//sha1(sleep)=c3ca5f787365eae0dea86250e27d476406956478
@@ -36,11 +42,29 @@ func main(){
 		panic(e)
 	}
 
+	fmt.Printf("0x%x\n",reflect.ValueOf(gabh.EggCall).Pointer())
+
+
+	fmt.Print("Press 'Enter' to continue...")
+	bufio.NewReader(os.Stdin).ReadBytes('\n')
+
+	eggreplace.FindAndReplace(
+		[]byte{0x65,0x67,0x67,0x63,0x61,0x6c,0x6c},
+		[]byte{0x90,0x90,0x0f,0x05,0x90,0x90,0x90},
+		reflect.ValueOf(gabh.EggCall).Pointer())
+
+
 	fmt.Printf("%s: %x\n","NtDelayExecution Sysid",sleep1)
 	times := -(3000 * 10000)
 
+
 	//hellsgate syscall
 	gabh.HgSyscall(sleep1,0,uintptr(unsafe.Pointer(&times)))
+
+	fmt.Printf("%s: %x\n","NtDelayExecution Sysid",sleep1)
+
+	gabh.EggCall(sleep1,0,uintptr(unsafe.Pointer(&times)))
+
 }
 
 
