@@ -610,6 +610,17 @@ func HgSyscall(callid uint16, argh ...uintptr) (errcode uint32, err error) {
 	return errcode, err
 }
 
+//EggCall calls the system function specified by callid with n arguments. Works much the same as syscall.Syscall - return value is the call error code and optional error text. All args are uintptrs to make it easy.
+func EggCall(callid uint16, argh ...uintptr) (errcode uint32, err error) {
+	errcode = eggCall(callid, argh...)
+
+	if errcode != 0 {
+		err = fmt.Errorf("non-zero return from syscall")
+	}
+	return errcode, err
+}
+
+
 func FullUnhook(DLLname []string) error {
 	for _, d := range DLLname {
 		dll, err := ioutil.ReadFile(d)
@@ -976,6 +987,9 @@ type sstring struct {
 func (s sstring) String() string {
 	return windows.UTF16PtrToString(s.PWstr)
 }
+
+
+func eggCall(callid uint16, argh ...uintptr) (errcode uint32)
 
 //Syscall calls the system function specified by callid with n arguments. Works much the same as syscall.Syscall - return value is the call error code and optional error text. All args are uintptrs to make it easy.
 func hgSyscall(callid uint16, argh ...uintptr) (errcode uint32)
