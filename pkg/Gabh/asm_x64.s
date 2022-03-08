@@ -2,77 +2,77 @@
 #define maxargs 16
 //func Syscall(callid uint16, argh ...uintptr) (uint32, error)
 TEXT ·hgSyscall(SB), $0-56
-	NOP
+	BYTE $0x90			//NOP
 	XORQ AX,AX
-	NOP
+	BYTE $0x90			//NOP
 	MOVW callid+0(FP), AX
-	NOP
+	BYTE $0x90			//NOP
 	PUSHQ CX
-	NOP
+	BYTE $0x90			//NOP
 	//put variadic size into CX
 	MOVQ argh_len+16(FP),CX
-	NOP
+	BYTE $0x90			//NOP
 	//put variadic pointer into SI
 	MOVQ argh_base+8(FP),SI
-	NOP
+	BYTE $0x90			//NOP
 	// SetLastError(0).
 	MOVQ	0x30(GS), DI
-	NOP
+	BYTE $0x90			//NOP
 	MOVL	$0, 0x68(DI)
-	NOP
+	BYTE $0x90			//NOP
 	SUBQ	$(maxargs*8), SP	// room for args
-	NOP
+	BYTE $0x90			//NOP
 	// Fast version, do not store args on the stack.
 	CMPL	CX, $4
-	NOP
+	BYTE $0x90			//NOP
 	JLE	loadregs
 	// Check we have enough room for args.
 	CMPL	CX, $maxargs
-	NOP
+	BYTE $0x90			//NOP
 	JLE	2(PC)
 	INT	$3			// not enough room -> crash
-	NOP
+	BYTE $0x90			//NOP
 	// Copy args to the stack.
 	MOVQ	SP, DI
-	NOP
+	BYTE $0x90			//NOP
 	CLD
-	NOP
+	BYTE $0x90			//NOP
 	REP; MOVSQ
-	NOP
+	BYTE $0x90			//NOP
 	MOVQ	SP, SI
-	NOP
+	BYTE $0x90			//NOP
 loadregs:
 	//move the stack pointer????? why????
 	SUBQ	$8, SP
-	NOP
+	BYTE $0x90			//NOP
 	// Load first 4 args into correspondent registers.
 	//交换位置免杀
 	MOVQ	8(SI), DX
-	NOP
+	BYTE $0x90			//NOP
 
 	MOVQ	24(SI), R9
-	NOP
+	BYTE $0x90			//NOP
 
 	MOVQ	0(SI), CX
-	NOP
+	BYTE $0x90			//NOP
 
 	MOVQ	16(SI), R8
-	NOP
+	BYTE $0x90			//NOP
 	// Floating point arguments are passed in the XMM
 	// registers. Set them here in case any of the arguments
 	// are floating point values. For details see
 	//	https://msdn.microsoft.com/en-us/library/zthk2dkh.aspx
 	MOVQ	CX, X0
-	NOP
+	BYTE $0x90			//NOP
 	MOVQ	DX, X1
-	NOP
+	BYTE $0x90			//NOP
 	MOVQ	R8, X2
-	NOP
+	BYTE $0x90			//NOP
 	MOVQ	R9, X3
-	NOP
+	BYTE $0x90			//NOP
 	//MOVW callid+0(FP), AX
 	MOVQ CX, R10
-	NOP
+	BYTE $0x90			//NOP
 	SYSCALL
 	ADDQ	$((maxargs+1)*8), SP
 	// Return result.
@@ -81,30 +81,31 @@ loadregs:
 	RET
 
 
+
 //func getModuleLoadedOrder(i int) (start uintptr, size uintptr)
 TEXT ·getMLO(SB), $0-32
 	//All operations push values into AX
 	//PEB
 	MOVQ 0x60(GS), AX
-	NOP
+	BYTE $0x90			//NOP
 	//PEB->LDR
 	MOVQ 0x18(AX),AX
-	NOP
+	BYTE $0x90			//NOP
 
 	//LDR->InMemoryOrderModuleList
 	MOVQ 0x20(AX),AX
-	NOP
+	BYTE $0x90			//NOP
 
 	//loop things
 	XORQ R10,R10
 startloop:
 	CMPQ R10,i+0(FP)
-	NOP
+	BYTE $0x90			//NOP
 	JE endloop
-	NOP
+	BYTE $0x90			//NOP
 	//Flink (get next element)
 	MOVQ (AX),AX
-	NOP
+	BYTE $0x90			//NOP
 	INCQ R10
 	JMP startloop
 endloop:
@@ -112,21 +113,21 @@ endloop:
 	//_LDR_DATA_TABLE_ENTRY->DllBase (offset 0x30)
 
 	MOVQ 0x30(AX),CX
-	NOP
+	BYTE $0x90			//NOP
 	MOVQ CX, size+16(FP)
-	NOP
+	BYTE $0x90			//NOP
 
 
 	MOVQ 0x20(AX),CX
-	NOP
+	BYTE $0x90			//NOP
     MOVQ CX, start+8(FP)
-    NOP
+    BYTE $0x90			//NOP
 
 
 	MOVQ AX,CX
-	NOP
+	BYTE $0x90			//NOP
 	ADDQ $0x38,CX
-	NOP
+	BYTE $0x90			//NOP
 	MOVQ CX, modulepath+24(FP)
 	//SYSCALL
 	RET
