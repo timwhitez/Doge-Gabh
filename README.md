@@ -180,6 +180,8 @@ https://github.com/TomOS3/UserModeUnhooking/blob/main/CustomCode/PerunsFart/Peru
 
 https://github.com/timwhitez/Spoofing-Gate
 
+https://klezvirus.github.io/RedTeaming/AV_Evasion/NoSysWhisper/
+
 
 # 🚀Star Trend
 [![Stargazers over time](https://starchart.cc/timwhitez/Doge-Gabh.svg)](https://starchart.cc/timwhitez/Doge-Gabh)
