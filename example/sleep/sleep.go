@@ -1,14 +1,12 @@
 package main
 
 import (
-	"bufio"
 	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"github.com/timwhitez/Doge-Gabh/pkg/Gabh"
 	"github.com/timwhitez/Doge-Gabh/pkg/eggreplace"
-	"os"
 	"reflect"
 	"syscall"
 	"unsafe"
@@ -45,8 +43,8 @@ func main(){
 	fmt.Printf("0x%x\n",reflect.ValueOf(gabh.EggCall).Pointer())
 
 
-	fmt.Print("Press 'Enter' to continue...")
-	bufio.NewReader(os.Stdin).ReadBytes('\n')
+	//fmt.Print("Press 'Enter' to continue...")
+	//bufio.NewReader(os.Stdin).ReadBytes('\n')
 
 	eggreplace.FindAndReplace(
 		[]byte{0x65,0x67,0x67,0x63,0x61,0x6c,0x6c},
