@@ -1,5 +1,5 @@
 //based on https://golang.org/src/runtime/sys_windows_amd64.s
-#define maxargs 16
+#define maxargs 18
 
 //func Syscall(callid uint16, argh ...uintptr) (uint32, error)
 TEXT ·hgSyscall(SB), $0-56
