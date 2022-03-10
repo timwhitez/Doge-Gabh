@@ -21,6 +21,10 @@ Doge-Gabh为集成 Windows ntdll动态调用,直接系统调用,api hash调用,d
 
 注意，本工具仅用于实现api调用。具体调用者实现的功能以及危害与项目本体无关。
 
+```
+example文件夹有较多调用示例可供参考
+```
+
 ## Functions
 ```
 //getfunc addr by hash from memory
