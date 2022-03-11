@@ -213,6 +213,14 @@ https://klezvirus.github.io/RedTeaming/AV_Evasion/NoSysWhisper/
 
 https://github.com/klezVirus/SysWhispers3
 
+https://github.com/thefLink/RecycledGate
+
+https://golang.org/src/runtime/sys_windows_amd64.s
+
+https://github.com/helpsystems/nanodump/blob/main/source/syscalls-asm.asm
+
+https://github.com/timwhitez/Doge-RecycledGate
+
 # 🚀Star Trend
 [![Stargazers over time](https://starchart.cc/timwhitez/Doge-Gabh.svg)](https://starchart.cc/timwhitez/Doge-Gabh)
 
