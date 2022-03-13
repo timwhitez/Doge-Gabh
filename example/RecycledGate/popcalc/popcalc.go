@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/timwhitez/Doge-Gabh/pkg/Gabh"
-	_ "runtime/cgo"
 	"syscall"
 	"unsafe"
 )
