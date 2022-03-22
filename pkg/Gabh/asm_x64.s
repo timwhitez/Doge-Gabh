@@ -22,6 +22,10 @@ TEXT ·hgSyscall(SB), $0-56
 	BYTE $0x90			//NOP
 	SUBQ	$(maxargs*8), SP	// room for args
 	BYTE $0x90			//NOP
+	//no parameters, special case
+	CMPL CX, $0
+	JLE callz
+
 	// Fast version, do not store args on the stack.
 	CMPL	CX, $4
 	BYTE $0x90			//NOP
@@ -71,6 +75,7 @@ loadregs:
 	MOVQ	R9, X3
 	BYTE $0x90			//NOP
 	//MOVW callid+0(FP), AX
+callz:
 	MOVQ CX, R10
 	BYTE $0x90			//NOP
 	SYSCALL
