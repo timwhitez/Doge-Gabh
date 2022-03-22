@@ -83,12 +83,14 @@ loadregs:
 	POPQ	CX
 	MOVL	AX, errcode+32(FP)
 	RET
+	PUSHQ CX
 callz:
 	MOVQ CX, R10
 	BYTE $0x90			//NOP
 	SYSCALL
 	ADDQ	$((maxargs)*8), SP
 	// Return result.
+	POPQ	CX
 	MOVL	AX, errcode+32(FP)
 	RET
 
