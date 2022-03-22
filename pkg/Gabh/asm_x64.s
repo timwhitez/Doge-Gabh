@@ -218,6 +218,10 @@ TEXT ·eggCall(SB), $0-56
 	BYTE $0x90			//NOP
 	SUBQ	$(maxargs*8), SP	// room for args
 	BYTE $0x90			//NOP
+	//no parameters, special case
+	CMPL CX, $0
+	JLE callz
+	
 	// Fast version, do not store args on the stack.
 	CMPL	CX, $4
 	BYTE $0x90			//NOP
@@ -286,7 +290,24 @@ loadregs:
 	POPQ	CX
 	MOVL	AX, errcode+32(FP)
 	RET
-
+	PUSHQ CX
+callz:
+	MOVQ CX, R10
+	BYTE $0x90			//NOP
+	
+	BYTE $0x65
+	BYTE $0x67
+	BYTE $0x67
+	BYTE $0x63
+	BYTE $0x61
+	BYTE $0x6c
+	BYTE $0x6c
+	//SYSCALL
+	ADDQ	$((maxargs)*8), SP
+	// Return result.
+	POPQ	CX
+	MOVL	AX, errcode+32(FP)
+	RET
 
 //func getModuleLoadedOrder(i int) (start uintptr, size uintptr)
 TEXT ·getMLO(SB), $0-32
