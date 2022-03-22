@@ -84,11 +84,10 @@ loadregs:
 	MOVL	AX, errcode+32(FP)
 	RET
 callz:
-	SUBQ	$8, SP
 	MOVQ CX, R10
 	BYTE $0x90			//NOP
 	SYSCALL
-	ADDQ	$((maxargs+1)*8), SP
+	ADDQ	$((maxargs)*8), SP
 	// Return result.
 	MOVL	AX, errcode+32(FP)
 	RET
