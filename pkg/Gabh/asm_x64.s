@@ -75,7 +75,6 @@ loadregs:
 	MOVQ	R9, X3
 	BYTE $0x90			//NOP
 	//MOVW callid+0(FP), AX
-callz:
 	MOVQ CX, R10
 	BYTE $0x90			//NOP
 	SYSCALL
@@ -84,7 +83,15 @@ callz:
 	POPQ	CX
 	MOVL	AX, errcode+32(FP)
 	RET
-
+callz:
+	SUBQ	$8, SP
+	MOVQ CX, R10
+	BYTE $0x90			//NOP
+	SYSCALL
+	ADDQ	$((maxargs+1)*8), SP
+	// Return result.
+	MOVL	AX, errcode+32(FP)
+	RET
 
 //func reCycall(callid uintptr,syscallA uintptr,argh ...uintptr) (uint32, error)
 TEXT ·reCycall(SB),$0-56
