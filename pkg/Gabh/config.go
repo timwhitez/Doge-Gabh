@@ -114,3 +114,16 @@ type _IMAGE_DOS_HEADER struct { // DOS .EXE header
 
 type IMAGE_DOS_HEADER _IMAGE_DOS_HEADER
 
+type SYSCALL_LIST struct {
+	Count   uint16
+	Address uintptr
+}
+
+type Count_LIST struct {
+	hashName string
+	Address  uintptr
+}
+
+type DW_SYSCALL_LIST struct {
+	slist map[string]*SYSCALL_LIST
+}
