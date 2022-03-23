@@ -228,6 +228,16 @@ https://github.com/helpsystems/nanodump/blob/main/source/syscalls-asm.asm
 
 https://github.com/timwhitez/Doge-RecycledGate
 
+https://github.com/timwhitez/Doge-Whisper
+
+https://github.com/Crummie5/Freshycalls
+
+https://github.com/jthuraisamy/SysWhispers2
+
+https://github.com/klezVirus/SysWhispers3
+
+https://www.mdsec.co.uk/2020/12/bypassing-user-mode-hooks-and-direct-invocation-of-system-calls-for-red-teams/
+
 # 🚀Star Trend
 [![Stargazers over time](https://starchart.cc/timwhitez/Doge-Gabh.svg)](https://starchart.cc/timwhitez/Doge-Gabh)
 
