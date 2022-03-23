@@ -5,7 +5,7 @@
 - 🐶Doge For Defense Evasion & Offensive Security
 
 # Doge-Gabh
-GetProcAddressByHash/remap/full dll unhooking/Tartaru's Gate/Spoofing Gate/universal/Perun's Fart/Spoofing-Gate/EGG/RecycledGate golang implementation
+GetProcAddressByHash/remap/full dll unhooking/Tartaru's Gate/Spoofing Gate/universal/Perun's Fart/Spoofing-Gate/EGG/RecycledGate/syswhisper golang implementation
 
 
 Doge-Gabh为集成 Windows ntdll动态调用,直接系统调用,api hash调用,dll脱钩的Golang组件包。
@@ -15,6 +15,8 @@ Doge-Gabh为集成 Windows ntdll动态调用,直接系统调用,api hash调用,d
 这可以用于许多目的，例如 PE 解析、动态 API 调用、shellcode loader、进程注入和绕过API挂钩等。
 
 集成多种地狱之门以及地狱之门衍生项目的golang实现:Hells Gate/HalosGate/Tartaru's Gate/Spoofing Gate/Doge-EGGCall/RecycledGate
+
+集成syswhisper实现
 
 项目名称Gabh原意仅为GetAddressByHash, 后延申为类似DInvoke的动态调用工具包。
 
