@@ -77,6 +77,11 @@ gabh.GetRecyCall()
 //recycled gate call
 gabh.ReCycall()
 
+// 初始化DW_SYSCALL_LIST 
+var newWhisper = gabh.DWhisper()
+
+// 从DW_SYSCALL_LIST 获取sysid
+sysid := newWhisper.GetSysid("4942059d")
 ```
 
 ## Usage
