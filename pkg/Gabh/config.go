@@ -1,5 +1,11 @@
 package gabh
 
+import (
+	"crypto/sha1"
+	"fmt"
+	"unsafe"
+)
+
 type (
 	DWORD     uint32
 	ULONGLONG uint64
@@ -126,4 +132,15 @@ type Count_LIST struct {
 
 type DW_SYSCALL_LIST struct {
 	slist map[string]*SYSCALL_LIST
+}
+
+func ntH(baseAddress uintptr) *IMAGE_NT_HEADERS {
+	return (*IMAGE_NT_HEADERS)(unsafe.Pointer(baseAddress + uintptr((*IMAGE_DOS_HEADER)(unsafe.Pointer(baseAddress)).E_lfanew)))
+}
+
+func str2sha1(s string) string {
+	h := sha1.New()
+	h.Write([]byte(s))
+	bs := h.Sum(nil)
+	return fmt.Sprintf("%x", bs)
 }
