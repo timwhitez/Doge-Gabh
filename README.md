@@ -5,7 +5,7 @@
 - 🐶Doge For Defense Evasion & Offensive Security
 
 # Doge-Gabh
-GetProcAddressByHash/remap/full dll unhooking/Tartaru's Gate/Spoofing Gate/universal/Perun's Fart/Spoofing-Gate/EGG/RecycledGate/syswhisper golang implementation
+GetProcAddressByHash/remap/full dll unhooking/Tartaru's Gate/Spoofing Gate/universal/Perun's Fart/Spoofing-Gate/EGG/RecycledGate/syswhisper/RefleXXion golang implementation
 
 
 Doge-Gabh为集成 Windows ntdll动态调用,直接系统调用,api hash调用,dll脱钩的Golang组件包。
@@ -84,6 +84,9 @@ var newWhisper = gabh.DWhisper()
 
 // 从DW_SYSCALL_LIST 获取sysid
 sysid := newWhisper.GetSysid("4942059d")
+
+//RefleXXion
+gabh.KDllunhook()
 ```
 
 ## Usage
