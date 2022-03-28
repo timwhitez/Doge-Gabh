@@ -10,7 +10,7 @@ import (
 	"unsafe"
 )
 
-func kdllload(DLLname string) (uintptr, uintptr) {
+func kdllload(DLLname string) (uintptr, uintptr, uintptr) {
 	ntPathW := "\\" + string([]byte{'K', 'n', 'o', 'w', 'n', 'D', 'l', 'l', 's'}) + "\\" + DLLname
 	ntPath, _ := windows.NewNTUnicodeString(ntPathW)
 
@@ -23,12 +23,16 @@ func kdllload(DLLname string) (uintptr, uintptr) {
 	NOS_ptr, _, e := MemFuncPtr(string([]byte{'n', 't', 'd', 'l', 'l', '.', 'd', 'l', 'l'}), "bdbea867842342052be06c259d49d535626c924b", str2sha1)
 	if e != nil {
 		//fmt.Println(e)
-		return 0, 0
+		return 0, 0, 0
 	}
 	var hKnownDll uintptr
 
-	syscall.Syscall(uintptr(NOS_ptr), 3, uintptr(unsafe.Pointer(&hKnownDll)), uintptr(0x0004), uintptr(unsafe.Pointer(&objectAttributes)))
+	r, _, _ := syscall.Syscall(uintptr(NOS_ptr), 3, uintptr(unsafe.Pointer(&hKnownDll)), uintptr(0x0004), uintptr(unsafe.Pointer(&objectAttributes)))
+	if r != 0 {
 
+		return 0, 0, 0
+	}
+	
 	var pCleanNtdll uintptr
 	var sztViewSize uintptr
 
@@ -38,7 +42,19 @@ func kdllload(DLLname string) (uintptr, uintptr) {
 	//status = NtMapViewOfSection(handleNtdllSection, NtCurrentProcess(), &unhookedNtdllBaseAddress, 0, 0, 0, &size, ViewShare, 0, PAGE_READONLY);
 	syscall.Syscall12(uintptr(ZMVS_ptr), 10, hKnownDll, uintptr(0xffffffffffffffff), uintptr(unsafe.Pointer(&pCleanNtdll)), 0, 0, 0, uintptr(unsafe.Pointer(&sztViewSize)), 1, 0, syscall.PAGE_READONLY, 0, 0)
 
-	return pCleanNtdll, sztViewSize
+	return pCleanNtdll, sztViewSize, hKnownDll
+}
+
+func kdllunload(pCleanNtdll uintptr, hKnownDll uintptr) {
+
+	//NtUnmapViewOfSection = bab64ab3009f237d28c9dc1ed3707190336fae77
+	ZMVS_ptr, _, _ := MemFuncPtr(string([]byte{'n', 't', 'd', 'l', 'l', '.', 'd', 'l', 'l'}), "bab64ab3009f237d28c9dc1ed3707190336fae77", str2sha1)
+
+	//status = NtMapViewOfSection(handleNtdllSection, NtCurrentProcess(), &unhookedNtdllBaseAddress, 0, 0, 0, &size, ViewShare, 0, PAGE_READONLY);
+	syscall.Syscall(uintptr(ZMVS_ptr), 2, uintptr(0xffffffffffffffff), pCleanNtdll, 0)
+
+	syscall.CloseHandle(syscall.Handle(hKnownDll))
+
 }
 
 func KDllunhook(DLLname []string) error {
@@ -49,7 +65,7 @@ func KDllunhook(DLLname []string) error {
 		if strings.Contains(d, "/") {
 			d = strings.Split(d, "/")[len(strings.Split(d, "/"))-1]
 		}
-		addrMod, modSize := kdllload(d)
+		addrMod, modSize, khndl := kdllload(d)
 		if addrMod == 0 || modSize == 0 {
 			return fmt.Errorf("Get KnownDll error ")
 		}
@@ -102,6 +118,7 @@ func KDllunhook(DLLname []string) error {
 			panic(runfunc)
 		}
 		file.Close()
+		kdllunload(addrMod, khndl)
 	}
 	return nil
 }
