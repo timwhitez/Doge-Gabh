@@ -64,6 +64,7 @@ func GetRecyCall(tarApi string, blacklist []string, hash func(string) string) ui
 
 	rr := rawreader.New(addrMod, int(modSize))
 	p, e := pe.NewFileFromMemory(rr)
+	defer p.Close()
 	if e != nil {
 		return 0
 	}
@@ -243,7 +244,7 @@ func getSysIDFromMem(funcname string, hash func(string) string) (uint16, error) 
 
 	rr := rawreader.New(addrMod, int(modSize))
 	p, e := pe.NewFileFromMemory(rr)
-
+	defer p.Close()
 	if e != nil {
 		return 0, e
 	}
@@ -305,6 +306,7 @@ func getSysIDFromMem(funcname string, hash func(string) string) (uint16, error) 
 func getSysIDFromDisk(funcname string, hash func(string) string) (uint16, error) {
 	l := string([]byte{'c', ':', '\\', 'w', 'i', 'n', 'd', 'o', 'w', 's', '\\', 's', 'y', 's', 't', 'e', 'm', '3', '2', '\\', 'n', 't', 'd', 'l', 'l', '.', 'd', 'l', 'l'})
 	p, e := pe.Open(l)
+	defer p.Close()
 	if e != nil {
 		return 0, e
 	}

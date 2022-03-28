@@ -59,6 +59,7 @@ func FullUnhook(DLLname []string) error {
 		if runfunc != 0 {
 			panic(runfunc)
 		}
+		file.Close()
 	}
 	return nil
 }
@@ -116,6 +117,7 @@ func CMDUnhook(DLLname []string) error {
 		if runfunc != 0 {
 			panic(runfunc)
 		}
+		file.Close()
 	}
 	return nil
 }

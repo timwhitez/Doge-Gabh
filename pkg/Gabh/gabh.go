@@ -23,9 +23,11 @@ func MemFuncPtr(moduleName string, funcnamehash string, hash func(string) string
 	}
 	//get dll exports
 	pef, err := dllMemExports(moduleName)
+	defer pef.Close()
 	if err != nil {
 		return 0, "", err
 	}
+
 	ex, err := pef.Exports()
 	if err != nil {
 		return 0, "", err
@@ -53,9 +55,11 @@ func DiskFuncPtr(moduleName string, funcnamehash string, hash func(string) strin
 	}
 	//get dll exports
 	pef, err := dllExports(moduleName)
+	defer pef.Close()
 	if err != nil {
 		return 0, "", err
 	}
+
 	ex, err := pef.Exports()
 	if err != nil {
 		return 0, "", err

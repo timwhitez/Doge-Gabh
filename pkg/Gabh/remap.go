@@ -40,7 +40,7 @@ func ReMapNtdll() (*unNtd, error) {
 	var handleNtdllSection uintptr
 	//status = NtCreateSection(&handleNtdllSection, STANDARD_RIGHTS_REQUIRED | SECTION_MAP_READ | SECTION_QUERY, NULL, NULL, PAGE_READONLY, SEC_IMAGE, handleNtdllDisk);
 	syscall.Syscall9(uintptr(NCS_ptr), 7, uintptr(unsafe.Pointer(&handleNtdllSection)), uintptr(0x000F0000|0x4|0x1), 0, 0, syscall.PAGE_READONLY, uintptr(0x1000000), hNtdllfile, 0, 0)
-	
+
 	//zwmapviewofsection = da39da04447a22b747ac8e86b4773bbd6ea96f9b
 	ZMVS_ptr, _, _ := DiskFuncPtr(string([]byte{'n', 't', 'd', 'l', 'l', '.', 'd', 'l', 'l'}), "da39da04447a22b747ac8e86b4773bbd6ea96f9b", str2sha1)
 
@@ -59,6 +59,7 @@ func ReMapNtdll() (*unNtd, error) {
 func (u *unNtd) GetFuncUnhook(funcnamehash string, hash func(string) string) (uint64, string, error) {
 	rr := rawreader.New(u.pModule, int(u.size))
 	p, e := pe.NewFileFromMemory(rr)
+	defer p.Close()
 	if e != nil {
 		return 0, "", e
 	}
