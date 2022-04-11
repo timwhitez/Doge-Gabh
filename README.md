@@ -245,3 +245,13 @@ https://www.mdsec.co.uk/2020/12/bypassing-user-mode-hooks-and-direct-invocation-
 [![Stargazers over time](https://starchart.cc/timwhitez/Doge-Gabh.svg)](https://starchart.cc/timwhitez/Doge-Gabh)
 
 
+## JetBrains
+
+Thanks to [JetBrains](https://www.jetbrains.com/?from=Doge-Gabh) for kindly sponsoring Doge-Gabh by providing a Goland IDE 
+Open Source license
+
+<p align="center">
+  <img alt="JetBrains Logo" src="docs/images/jetbrains-variant-4.png" height="40%" width="40%">
+  <img alt="GoLand Logo" src="docs/images/icon-goland.png" height="20%" width="20%">
+</p>
+ 
