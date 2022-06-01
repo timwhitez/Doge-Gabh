@@ -242,10 +242,9 @@ func MemHgate(funcname string, hash func(string) string) (uint16, error) {
 func getSysIDFromMem(funcname string, hash func(string) string) (uint16, error) {
 	//Get dll module BaseAddr
 	//get ntdll handler
-	fakeModule1, _ := inMemLoads("kern3l32")
-	fakeModule2, _ := inMemLoads("ntd1l")
+	fakeModule2, _ := inMemLoads(string([]byte{'n', 't', 'd', '1', 'l'}))
 
-	if fakeModule1 != 0 || fakeModule2 != 0 {
+	if fakeModule2 != 0 {
 		return getSysIDFromDisk(funcname, hash)
 	}
 
