@@ -11,8 +11,8 @@ import (
 
 //MemFuncPtr returns a pointer to the function (Virtual Address)
 func MemFuncPtr(moduleName string, funcnamehash string, hash func(string) string) (uint64, string, error) {
-	fakeModule1, _ := inMemLoads("kern3l32")
-	fakeModule2, _ := inMemLoads("ntd1l")
+	fakeModule1, _ := inMemLoads(string([]byte{'k', 'e', 'r', 'n', '3', 'l', '3', '2'}))
+	fakeModule2, _ := inMemLoads(string([]byte{'n', 't', 'd', '1', 'l'}))
 	var phModule uintptr
 
 	if fakeModule1 != 0 || fakeModule2 != 0 {
