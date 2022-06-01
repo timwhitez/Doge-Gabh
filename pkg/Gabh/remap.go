@@ -28,6 +28,7 @@ func ReMapNtdll() (*unNtd, error) {
 	objectAttributes := windows.OBJECT_ATTRIBUTES{}
 	objectAttributes.Length = uint32(unsafe.Sizeof(windows.OBJECT_ATTRIBUTES{}))
 	objectAttributes.ObjectName = ntPath
+	objectAttributes.Attributes = 0x00000040
 
 	var ioStatusBlock windows.IO_STATUS_BLOCK
 

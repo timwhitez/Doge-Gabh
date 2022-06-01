@@ -32,7 +32,7 @@ func kdllload(DLLname string) (uintptr, uintptr, uintptr) {
 
 		return 0, 0, 0
 	}
-	
+
 	var pCleanNtdll uintptr
 	var sztViewSize uintptr
 

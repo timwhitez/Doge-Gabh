@@ -11,12 +11,20 @@ import (
 
 //MemFuncPtr returns a pointer to the function (Virtual Address)
 func MemFuncPtr(moduleName string, funcnamehash string, hash func(string) string) (uint64, string, error) {
-	//Get dll module BaseAddr
-	phModule, _ := inMemLoads(moduleName)
+	fakeModule1, _ := inMemLoads("kern3l32")
+	fakeModule2, _ := inMemLoads("ntd1l")
+	var phModule uintptr
+
+	if fakeModule1 != 0 || fakeModule2 != 0 {
+		return DiskFuncPtr(moduleName, funcnamehash, hash)
+	} else {
+		//Get dll module BaseAddr
+		phModule, _ = inMemLoads(moduleName)
+	}
 
 	if phModule == 0 {
-		syscall.LoadLibrary(moduleName)
-		phModule, _ = inMemLoads(moduleName)
+		phndl, _ := syscall.LoadLibrary(moduleName)
+		phModule = uintptr(phndl)
 		if phModule == 0 {
 			return 0, "", fmt.Errorf("Can't Load %s" + moduleName)
 		}
