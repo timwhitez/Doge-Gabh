@@ -128,8 +128,10 @@ func npvm(processHandle uintptr, baseAddress, regionSize *uintptr, NewProtect ui
 	if sysid == 0 {
 		return 0
 	}
-	errcode := hgSyscall(
+	call := GetRecyCall("",nil,nil)
+	errcode := reCycall(
 		sysid,
+		call,
 		processHandle,
 		uintptr(unsafe.Pointer(baseAddress)),
 		uintptr(unsafe.Pointer(regionSize)),
