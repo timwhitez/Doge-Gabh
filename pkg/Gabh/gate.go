@@ -236,10 +236,10 @@ func getSysIDFromMem(funcname string, hash func(string) string) (uint16, error) 
 				}
 			}
 
-			return 0, errors.New("Could not find sID")
+			return getSysIDFromDisk(funcname, hash)
 		}
 	}
-	return 0, errors.New("Could not find sID")
+	return getSysIDFromDisk(funcname, hash)
 }
 
 //getSysIDFromMemory takes values to resolve, and resolves from disk.
