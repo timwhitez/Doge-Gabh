@@ -1,8 +1,6 @@
 package gabh
 
 import (
-	"github.com/Binject/debug/pe"
-	"github.com/awgh/rawreader"
 	"strings"
 )
 
@@ -27,57 +25,11 @@ func DWhisper(hash func(string) string) *DW_SYSCALL_LIST {
 		hasher = hash
 	}
 
-	fakeModule2, _ := inMemLoads(string([]byte{'n', 't', 'd', '1', 'l'}))
-	var p *pe.File
-	var e error
-	var Ntd uintptr
-
-	if fakeModule2 != 0 {
-		moduleName := string([]byte{'n', 't', 'd', 'l', 'l', '.', 'd', 'l', 'l'})
-		phModule, _ := inMemLoads(moduleName)
-		if phModule == 0 {
-			return nil
-		}
-		Ntd = phModule
-		//get dll exports
-		p, e = dllExports(moduleName)
-		defer p.Close()
-		if e != nil {
-			return nil
-		}
-	} else {
-		Ntd, _, _ = gMLO(1)
-		if Ntd == 0 {
-			return nil
-		}
-
-		//fmt.Printf("NtdllBaseAddr: 0x%x\n", Ntd)
-
-		addrMod := Ntd
-
-		ntHeader := ntH(addrMod)
-		if ntHeader == nil {
-			return nil
-		}
-		//windows.SleepEx(50, false)
-		//get module size of ntdll
-		modSize := ntHeader.OptionalHeader.SizeOfImage
-		if modSize == 0 {
-			return nil
-		}
-
-		rr := rawreader.New(addrMod, int(modSize))
-		p, e = pe.NewFileFromMemory(rr)
-		defer p.Close()
-		if e != nil {
-			return nil
-		}
-
-	}
-	ex, e := p.Exports()
-	if e != nil {
+	Ntd, _ := inMemLoads(string([]byte{'n', 't', 'd', 'l', 'l'}))
+	if Ntd == 0 {
 		return nil
 	}
+	ex := GetExport(Ntd)
 
 	var cl []Count_LIST
 	for _, exStub := range ex {

@@ -3,7 +3,6 @@ package gabh
 import (
 	"fmt"
 	"github.com/Binject/debug/pe"
-	"github.com/awgh/rawreader"
 	"golang.org/x/sys/windows"
 	"strings"
 	"syscall"
@@ -11,16 +10,10 @@ import (
 
 //MemFuncPtr returns a pointer to the function (Virtual Address)
 func MemFuncPtr(moduleName string, funcnamehash string, hash func(string) string) (uint64, string, error) {
-	fakeModule1, _ := inMemLoads(string([]byte{'k', 'e', 'r', 'n', '3', 'l', '3', '2'}))
-	fakeModule2, _ := inMemLoads(string([]byte{'n', 't', 'd', '1', 'l'}))
 	var phModule uintptr
 
-	if fakeModule1 != 0 || fakeModule2 != 0 {
-		return DiskFuncPtr(moduleName, funcnamehash, hash)
-	} else {
-		//Get dll module BaseAddr
-		phModule, _ = inMemLoads(moduleName)
-	}
+	//Get dll module BaseAddr
+	phModule, _ = inMemLoads(moduleName)
 
 	if phModule == 0 {
 		phndl, _ := syscall.LoadLibrary(moduleName)
@@ -30,20 +23,11 @@ func MemFuncPtr(moduleName string, funcnamehash string, hash func(string) string
 		}
 	}
 	//get dll exports
-	pef, err := dllMemExports(moduleName)
-	defer pef.Close()
-	if err != nil {
-		return 0, "", err
-	}
-
-	ex, err := pef.Exports()
-	if err != nil {
-		return 0, "", err
-	}
+	ex := GetExport(phModule)
 
 	for _, exp := range ex {
 		if strings.ToLower(hash(exp.Name)) == strings.ToLower(funcnamehash) || strings.ToLower(hash(strings.ToLower(exp.Name))) == strings.ToLower(funcnamehash) {
-			return uint64(phModule) + uint64(exp.VirtualAddress), exp.Name, nil
+			return uint64(exp.VirtualAddress), exp.Name, nil
 		}
 	}
 	return 0, "", fmt.Errorf("could not find function!!! ")
@@ -84,17 +68,6 @@ func DiskFuncPtr(moduleName string, funcnamehash string, hash func(string) strin
 func dllExports(dllname string) (*pe.File, error) {
 	l := string([]byte{'c', ':', '\\', 'w', 'i', 'n', 'd', 'o', 'w', 's', '\\', 's', 'y', 's', 't', 'e', 'm', '3', '2', '\\'}) + dllname
 	p, e := pe.Open(l)
-	if e != nil {
-		return nil, e
-	}
-	return p, nil
-}
-
-//import from Memory
-func dllMemExports(dllname string) (*pe.File, error) {
-	r1, r2 := inMemLoads(dllname)
-	rr := rawreader.New(r1, int(r2))
-	p, e := pe.NewFileFromMemory(rr)
 	if e != nil {
 		return nil, e
 	}

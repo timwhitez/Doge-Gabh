@@ -1,12 +1,10 @@
 package gabh
 
 import (
-	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"github.com/Binject/debug/pe"
-	"github.com/awgh/rawreader"
 	"golang.org/x/sys/windows"
 	"math/rand"
 	"sort"
@@ -42,59 +40,13 @@ func GetRecyCall(tarApi string, blacklist []string, hash func(string) string) ui
 			blacklist[i] = strings.ToLower(v)
 		}
 	}
-
-	fakeModule2, _ := inMemLoads(string([]byte{'n', 't', 'd', '1', 'l'}))
-	var p *pe.File
-	var e error
 	var Ntd uintptr
 
-	if fakeModule2 != 0 {
-		moduleName := string([]byte{'n', 't', 'd', 'l', 'l', '.', 'd', 'l', 'l'})
-		phModule, _ := inMemLoads(moduleName)
-		if phModule == 0 {
-			return 0
-		}
-		Ntd = phModule
-		//get dll exports
-		p, e = dllExports(moduleName)
-		defer p.Close()
-		if e != nil {
-			return 0
-		}
-	} else {
-		Ntd, _, _ = gMLO(1)
-		if Ntd == 0 {
-			return 0
-		}
-
-		//fmt.Printf("NtdllBaseAddr: 0x%x\n", Ntd)
-
-		addrMod := Ntd
-
-		ntHeader := ntH(addrMod)
-		if ntHeader == nil {
-			return 0
-		}
-		//windows.SleepEx(50, false)
-		//get module size of ntdll
-		modSize := ntHeader.OptionalHeader.SizeOfImage
-		if modSize == 0 {
-			return 0
-		}
-
-		rr := rawreader.New(addrMod, int(modSize))
-		p, e = pe.NewFileFromMemory(rr)
-		defer p.Close()
-		if e != nil {
-			return 0
-		}
-
-	}
-
-	ex, e := p.Exports()
-	if e != nil {
+	Ntd, _ = inMemLoads(string([]byte{'n', 't', 'd', 'l', 'l'}))
+	if Ntd == 0 {
 		return 0
 	}
+	ex := GetExport(Ntd)
 
 	rand.Seed(time.Now().UnixNano())
 	for i := range ex {
@@ -107,30 +59,22 @@ func GetRecyCall(tarApi string, blacklist []string, hash func(string) string) ui
 		if tarApi != "" {
 			if strings.ToLower(hasher(exp.Name)) == strings.ToLower(tarApi) || strings.ToLower(hasher(strings.ToLower(exp.Name))) == strings.ToLower(tarApi) {
 				//fmt.Println("Syscall API: " + exp.Name)
-				offset := rvaToOffset(p, exp.VirtualAddress)
-				b, e := p.Bytes()
-				if e != nil {
-					return 0
-				}
-				buff := b[offset : offset+32]
-				if bytes.Compare(buff[18:21], []byte{0x0f, 0x05, 0xc3}) == 0 {
+				if *(*byte)(unsafe.Pointer(exp.VirtualAddress + 18)) == 0x0f &&
+					*(*byte)(unsafe.Pointer(exp.VirtualAddress + 19)) == 0x05 &&
+					*(*byte)(unsafe.Pointer(exp.VirtualAddress + 20)) == 0xc3 {
 					//fmt.Printf("Syscall;ret Address: 0x%x\n", Ntd+uintptr(exp.VirtualAddress)+uintptr(18))
-					return Ntd + uintptr(exp.VirtualAddress) + uintptr(18)
+					return exp.VirtualAddress + uintptr(18)
 				}
 			}
 		} else {
 			if strings.HasPrefix(exp.Name, string([]byte{'N', 't'})) || strings.HasPrefix(exp.Name, string([]byte{'Z', 'w'})) {
 				if !contains(blacklist, strings.ToLower(hasher(exp.Name))) && !contains(blacklist, strings.ToLower(hasher(strings.ToLower(exp.Name)))) {
 					//fmt.Println("Syscall API: " + exp.Name)
-					offset := rvaToOffset(p, exp.VirtualAddress)
-					b, e := p.Bytes()
-					if e != nil {
-						return 0
-					}
-					buff := b[offset : offset+32]
-					if bytes.Compare(buff[18:21], []byte{0x0f, 0x05, 0xc3}) == 0 {
+					if *(*byte)(unsafe.Pointer(exp.VirtualAddress + 18)) == 0x0f &&
+						*(*byte)(unsafe.Pointer(exp.VirtualAddress + 19)) == 0x05 &&
+						*(*byte)(unsafe.Pointer(exp.VirtualAddress + 20)) == 0xc3 {
 						//fmt.Printf("Syscall;ret Address: 0x%x\n", Ntd+uintptr(exp.VirtualAddress)+uintptr(18))
-						return Ntd + uintptr(exp.VirtualAddress) + uintptr(18)
+						return exp.VirtualAddress + uintptr(18)
 					}
 				}
 			}
@@ -241,55 +185,19 @@ func MemHgate(funcname string, hash func(string) string) (uint16, error) {
 //getSysIDFromMemory takes values to resolve, and resolves from disk.
 func getSysIDFromMem(funcname string, hash func(string) string) (uint16, error) {
 	//Get dll module BaseAddr
-	//get ntdll handler
-	fakeModule2, _ := inMemLoads(string([]byte{'n', 't', 'd', '1', 'l'}))
-
-	if fakeModule2 != 0 {
-		return getSysIDFromDisk(funcname, hash)
-	}
-
-	Ntd, _, _ := gMLO(1)
+	//get ntdll handle
+	Ntd, _ := inMemLoads(string([]byte{'n', 't', 'd', 'l', 'l'}))
 	if Ntd == 0 {
-		return 0, fmt.Errorf("err GetModuleHandleA")
+		return 0, nil
 	}
-	//moduleInfo := windows.ModuleInfo{}
-	//err := windows.GetModuleInformation(windows.Handle(uintptr(0xffffffffffffffff)), windows.Handle(Ntd), &moduleInfo, uint32(unsafe.Sizeof(moduleInfo)))
-
-	//if err != nil {
-	//	return 0, err
-	//}
-	//addrMod := moduleInfo.BaseOfDll
-	addrMod := Ntd
-
-	//get ntheader of ntdll
-	ntHeader := ntH(addrMod)
-	if ntHeader == nil {
-		return 0, fmt.Errorf("get ntHeader err")
-	}
-	windows.SleepEx(50, false)
-	//get module size of ntdll
-	modSize := ntHeader.OptionalHeader.SizeOfImage
-	if modSize == 0 {
-		return 0, fmt.Errorf("get module size err")
-	}
-	//fmt.Println("ntdll module size: " + strconv.Itoa(int(modSize)))
-
-	rr := rawreader.New(addrMod, int(modSize))
-	p, e := pe.NewFileFromMemory(rr)
-	defer p.Close()
-	if e != nil {
-		return 0, e
-	}
-	ex, e := p.Exports()
+	ex := GetExport(Ntd)
 	for _, exp := range ex {
 		if strings.ToLower(hash(exp.Name)) == strings.ToLower(funcname) || strings.ToLower(hash(strings.ToLower(exp.Name))) == strings.ToLower(funcname) {
-			offset := rvaToOffset(p, exp.VirtualAddress)
-			b, e := p.Bytes()
-			if e != nil {
-				return 0, e
+			buff := make([]byte, 10)
+			if exp.VirtualAddress <= Ntd {
+				return 0, nil
 			}
-			buff := b[offset : offset+10]
-
+			Memcpy(uintptr(unsafe.Pointer(&buff[0])), uintptr(exp.VirtualAddress), 10)
 			// First opcodes should be :
 			//    MOV R10, RCX
 			//    MOV RAX, <syscall>

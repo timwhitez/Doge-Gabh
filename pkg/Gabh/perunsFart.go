@@ -53,8 +53,10 @@ func PerunsFart() error {
 	//if Ntdll == 0 {
 	//	return fmt.Errorf("err GetModuleHandleA")
 	//}
-	Ntd, _, _ := gMLO(1)
-
+	Ntd, _ := inMemLoads(string([]byte{'n', 't', 'd', 'l', 'l'}))
+	if Ntd == 0 {
+		return nil
+	}
 	//moduleInfo := windows.ModuleInfo{}
 
 	//curr, _ := syscall.GetCurrentProcess()

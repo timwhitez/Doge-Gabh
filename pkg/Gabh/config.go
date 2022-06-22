@@ -3,6 +3,7 @@ package gabh
 import (
 	"crypto/sha1"
 	"fmt"
+	"golang.org/x/sys/windows"
 	"unsafe"
 )
 
@@ -143,4 +144,55 @@ func str2sha1(s string) string {
 	h.Write([]byte(s))
 	bs := h.Sum(nil)
 	return fmt.Sprintf("%x", bs)
+}
+
+// Export - describes a single export entry
+type Export struct {
+	Name           string
+	VirtualAddress uintptr
+}
+type imageExportDir struct {
+	_, _                  uint32
+	_, _                  uint16
+	Name                  uint32
+	Base                  uint32
+	NumberOfFunctions     uint32
+	NumberOfNames         uint32
+	AddressOfFunctions    uint32
+	AddressOfNames        uint32
+	AddressOfNameOrdinals uint32
+}
+
+func GetExport(pModuleBase uintptr) []Export {
+	var exports []Export
+	var pImageNtHeaders = ntH(pModuleBase)
+	//IMAGE_NT_SIGNATURE
+	if pImageNtHeaders.Signature != 0x00004550 {
+		return nil
+	}
+	var pImageExportDirectory *imageExportDir
+
+	pImageExportDirectory = ((*imageExportDir)(unsafe.Pointer(uintptr(pModuleBase + uintptr(pImageNtHeaders.OptionalHeader.DataDirectory[0].VirtualAddress)))))
+
+	pdwAddressOfFunctions := pModuleBase + uintptr(pImageExportDirectory.AddressOfFunctions)
+	pdwAddressOfNames := pModuleBase + uintptr(pImageExportDirectory.AddressOfNames)
+
+	pwAddressOfNameOrdinales := pModuleBase + uintptr(pImageExportDirectory.AddressOfNameOrdinals)
+
+	for cx := uintptr(0); cx < uintptr((pImageExportDirectory).NumberOfNames); cx++ {
+		var export Export
+		pczFunctionName := pModuleBase + uintptr(*(*uint32)(unsafe.Pointer(pdwAddressOfNames + cx*4)))
+		pFunctionAddress := pModuleBase + uintptr(*(*uint32)(unsafe.Pointer(pdwAddressOfFunctions + uintptr(*(*uint16)(unsafe.Pointer(pwAddressOfNameOrdinales + cx*2)))*4)))
+		export.Name = windows.BytePtrToString((*byte)(unsafe.Pointer(pczFunctionName)))
+		export.VirtualAddress = uintptr(pFunctionAddress)
+		exports = append(exports, export)
+	}
+
+	return exports
+}
+
+func Memcpy(dst, src, size uintptr) {
+	for i := uintptr(0); i < size; i++ {
+		*(*uint8)(unsafe.Pointer(dst + i)) = *(*uint8)(unsafe.Pointer(src + i))
+	}
 }

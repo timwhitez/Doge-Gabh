@@ -2,8 +2,6 @@ package gabh
 
 import (
 	"fmt"
-	"github.com/Binject/debug/pe"
-	"github.com/awgh/rawreader"
 	"strings"
 	"unsafe"
 )
@@ -15,37 +13,24 @@ type IMAGE_RUNTIME_FUNCTION_ENTRY struct {
 }
 
 func GetSSNByNameExcept(fname string, hash func(string) string) (uintptr, error) {
-	Ntd, _, _ := gMLO(1)
+	Ntd, _ := inMemLoads(string([]byte{'n', 't', 'd', 'l', 'l'}))
+	if Ntd == 0 {
+		return 0, nil
+	}
 	ntHeader := ntH(Ntd)
 	if ntHeader == nil {
 		return 0, fmt.Errorf(string([]byte{'g', 'e', 't', ' ', 'n', 't', 'H', 'e', 'a', 'd', 'e', 'r', ' ', 'e', 'r', 'r'}))
 	}
-	//get module size of ntdll
-	modSize := ntHeader.OptionalHeader.SizeOfImage
-	if modSize == 0 {
-		return 0, fmt.Errorf(string([]byte{'g', 'e', 't', ' ', 'm', 'o', 'd', 'u', 'l', 'e', ' ', 's', 'i', 'z', 'e', ' ', 'e', 'r', 'r'}))
-	}
-	//fmt.Println("ntdll module size: " + strconv.Itoa(int(modSize)))
 
-	rr := rawreader.New(Ntd, int(modSize))
-	p, e := pe.NewFileFromMemory(rr)
-	defer p.Close()
-	if e != nil {
-		return 0, e
-	}
+	ex := GetExport(Ntd)
 
-	ex, e := p.Exports()
-	if e != nil {
-		return 0, e
-	}
-
-	rva := p.OptionalHeader.(*pe.OptionalHeader64).DataDirectory[pe.IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress
+	rva := ntHeader.OptionalHeader.DataDirectory[3].VirtualAddress
 	rtf := getrtf(Ntd, uintptr(rva), 0)
 	ssn := uintptr(0)
 	for i := 0; getrtf(Ntd, uintptr(rva), uintptr(i)).BeginAddress != 0; i++ {
 		rtf = getrtf(Ntd, uintptr(rva), uintptr(i))
 		for _, exp := range ex {
-			if exp.VirtualAddress == rtf.BeginAddress {
+			if uint32(exp.VirtualAddress-Ntd) == rtf.BeginAddress {
 				if strings.ToLower(hash(exp.Name)) == strings.ToLower(fname) || strings.ToLower(hash(strings.ToLower(exp.Name))) == strings.ToLower(fname) {
 					return ssn, nil
 				}
