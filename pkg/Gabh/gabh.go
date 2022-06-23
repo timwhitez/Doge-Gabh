@@ -30,7 +30,7 @@ func MemFuncPtr(moduleName string, funcnamehash string, hash func(string) string
 			return uint64(exp.VirtualAddress), exp.Name, nil
 		}
 	}
-	return 0, "", fmt.Errorf("could not find function!!! ")
+	return DiskFuncPtr(moduleName, funcnamehash, hash)
 }
 
 //DiskFuncPtr returns a pointer to the function (Virtual Address)
