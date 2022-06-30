@@ -26,6 +26,14 @@ func (l *Library) FindProc(funcname string) (uintptr, bool) {
 }
 
 func Universal(hash func(string) string) (*Library, error) {
+	rawstr := func(name string)string{
+		return name
+	}
+
+	if hash == nil{
+		hash = rawstr
+	}
+
 	l := string([]byte{'c', ':', '\\', 'w', 'i', 'n', 'd', 'o', 'w', 's', '\\', 's', 'y', 's', 't', 'e', 'm', '3', '2', '\\'}) + string([]byte{'n', 't', 'd', 'l', 'l', '.', 'd', 'l', 'l'})
 	image, err := ioutil.ReadFile(l)
 	if err != nil {
@@ -149,12 +157,12 @@ func copySections(pefile *pe.File, image *[]byte, loc uintptr) error {
 
 //NtAllocateVirtualMemory
 func NvA(addr, size uintptr, allocType, protect uint32) (uintptr, error) {
-	procVA, e := MemHgate(string([]byte{'0', '4', '2', '6', '2', 'a', '7', '9', '4', '3', '5', '1', '4', 'a', 'b', '9', '3', '1', '2', '8', '7', '7', '2', '9', 'e', '8', '6', '2', 'c', 'a', '6', '6', '3', 'd', '8', '1', 'f', '5', '1', '5'}), str2sha1)
+	procVA, e := GetSSNByNameExcept(string([]byte{'0', '4', '2', '6', '2', 'a', '7', '9', '4', '3', '5', '1', '4', 'a', 'b', '9', '3', '1', '2', '8', '7', '7', '2', '9', 'e', '8', '6', '2', 'c', 'a', '6', '6', '3', 'd', '8', '1', 'f', '5', '1', '5'}), str2sha1)
 	if procVA == 0 {
 		return 0, e
 	}
 	call := GetRecyCall("", nil, nil)
-	r, e := ReCycall(procVA, call, uintptr(0xffffffffffffffff), uintptr(unsafe.Pointer(&addr)), 0, uintptr(unsafe.Pointer(&size)), uintptr(allocType), uintptr(protect))
+	r, e := ReCycall(uint16(procVA), call, uintptr(0xffffffffffffffff), uintptr(unsafe.Pointer(&addr)), 0, uintptr(unsafe.Pointer(&size)), uintptr(allocType), uintptr(protect))
 	if r != 0 {
 		return 0, e
 	}

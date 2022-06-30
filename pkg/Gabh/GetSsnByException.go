@@ -13,6 +13,14 @@ type IMAGE_RUNTIME_FUNCTION_ENTRY struct {
 }
 
 func GetSSNByNameExcept(fname string, hash func(string) string) (uintptr, error) {
+	rawstr := func(name string)string{
+		return name
+	}
+
+	if hash == nil{
+		hash = rawstr
+	}
+
 	Ntd, _ := inMemLoads(string([]byte{'n', 't', 'd', 'l', 'l'}))
 	if Ntd == 0 {
 		return 0, nil

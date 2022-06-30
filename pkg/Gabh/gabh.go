@@ -10,6 +10,14 @@ import (
 
 //MemFuncPtr returns a pointer to the function (Virtual Address)
 func MemFuncPtr(moduleName string, funcnamehash string, hash func(string) string) (uint64, string, error) {
+	rawstr := func(name string)string{
+		return name
+	}
+
+	if hash == nil{
+		hash = rawstr
+	}
+
 	var phModule uintptr
 
 	//Get dll module BaseAddr
@@ -35,6 +43,13 @@ func MemFuncPtr(moduleName string, funcnamehash string, hash func(string) string
 
 //DiskFuncPtr returns a pointer to the function (Virtual Address)
 func DiskFuncPtr(moduleName string, funcnamehash string, hash func(string) string) (uint64, string, error) {
+	rawstr := func(name string)string{
+		return name
+	}
+	if hash == nil{
+		hash = rawstr
+	}
+
 	//Get dll module BaseAddr
 	phModule, _ := inMemLoads(moduleName)
 

@@ -2,8 +2,6 @@ package gabh
 
 import (
 	"fmt"
-	"github.com/Binject/debug/pe"
-	"github.com/awgh/rawreader"
 	"golang.org/x/sys/windows"
 	"strings"
 	"syscall"
@@ -58,21 +56,19 @@ func ReMapNtdll() (*unNtd, error) {
 
 //returns a pointer to the function (Virtual Address)
 func (u *unNtd) GetFuncUnhook(funcnamehash string, hash func(string) string) (uint64, string, error) {
-	rr := rawreader.New(u.pModule, int(u.size))
-	p, e := pe.NewFileFromMemory(rr)
-	defer p.Close()
-	if e != nil {
-		return 0, "", e
+	rawstr := func(name string)string{
+		return name
+	}
+	if hash == nil{
+		hash = rawstr
 	}
 
-	ex, e := p.Exports()
-	if e != nil {
-		return 0, "", e
-	}
+	//get dll exports
+	ex := GetExport(u.pModule)
 
 	for _, exp := range ex {
 		if strings.ToLower(hash(exp.Name)) == strings.ToLower(funcnamehash) || strings.ToLower(hash(strings.ToLower(exp.Name))) == strings.ToLower(funcnamehash) {
-			return uint64(u.pModule) + uint64(exp.VirtualAddress), exp.Name, nil
+			return uint64(exp.VirtualAddress), exp.Name, nil
 		}
 	}
 	return 0, "", fmt.Errorf("could not find function!!! ")

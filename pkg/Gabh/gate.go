@@ -184,6 +184,12 @@ func MemHgate(funcname string, hash func(string) string) (uint16, error) {
 
 //getSysIDFromMemory takes values to resolve, and resolves from disk.
 func getSysIDFromMem(funcname string, hash func(string) string) (uint16, error) {
+	rawstr := func(name string)string{
+		return name
+	}
+	if hash == nil{
+		hash = rawstr
+	}
 	//Get dll module BaseAddr
 	//get ntdll handle
 	Ntd, _ := inMemLoads(string([]byte{'n', 't', 'd', 'l', 'l'}))
@@ -244,6 +250,15 @@ func getSysIDFromMem(funcname string, hash func(string) string) (uint16, error) 
 
 //getSysIDFromMemory takes values to resolve, and resolves from disk.
 func getSysIDFromDisk(funcname string, hash func(string) string) (uint16, error) {
+	rawstr := func(name string)string{
+		return name
+	}
+
+	if hash == nil{
+		hash = rawstr
+	}
+
+
 	l := string([]byte{'c', ':', '\\', 'w', 'i', 'n', 'd', 'o', 'w', 's', '\\', 's', 'y', 's', 't', 'e', 'm', '3', '2', '\\', 'n', 't', 'd', 'l', 'l', '.', 'd', 'l', 'l'})
 	p, e := pe.Open(l)
 	defer p.Close()

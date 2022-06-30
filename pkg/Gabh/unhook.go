@@ -124,13 +124,13 @@ func CMDUnhook(DLLname []string) error {
 
 func npvm(processHandle uintptr, baseAddress, regionSize *uintptr, NewProtect uintptr, oldprotect *uintptr) uint32 {
 	//NtProtectVirtualMemory
-	sysid, _ := DiskHgate("646bd5afa7b482fdd90fb8f2eefe1301a867d7b9", str2sha1)
+	sysid, _ := GetSSNByNameExcept("646bd5afa7b482fdd90fb8f2eefe1301a867d7b9", str2sha1)
 	if sysid == 0 {
 		return 0
 	}
 	call := GetRecyCall("",nil,nil)
 	errcode := reCycall(
-		sysid,
+		uint16(sysid),
 		call,
 		processHandle,
 		uintptr(unsafe.Pointer(baseAddress)),
