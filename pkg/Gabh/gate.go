@@ -216,27 +216,29 @@ func getSysIDFromMem(funcname string, hash func(string) string) (uint16, error) 
 				return sysIDFromRawBytes(buff)
 			} else {
 				for idx := uintptr(1); idx <= 500; idx++ {
+					Memcpy(uintptr(unsafe.Pointer(&buff[0])), uintptr(exp.VirtualAddress + idx*IDX), 10)
 					// check neighboring syscall down
-					if *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[0])) + idx*IDX)) == 0x4c &&
-						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[1])) + idx*IDX)) == 0x8b &&
-						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[2])) + idx*IDX)) == 0xd1 &&
-						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[3])) + idx*IDX)) == 0xb8 &&
-						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[6])) + idx*IDX)) == 0x00 &&
-						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[7])) + idx*IDX)) == 0x00 {
-						buff[4] = *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[4])) + idx*IDX))
-						buff[5] = *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[5])) + idx*IDX))
+					if  buff[0] == 0x4c && //76
+						buff[1] == 0x8b && //139
+						buff[2] == 0xd1 && //209
+						buff[3] == 0xb8 && //184
+						buff[6] == 0x00 &&
+						buff[7] == 0x00 {
+						//buff[4] = *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[4])) + idx*IDX))
+						//buff[5] = *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[5])) + idx*IDX))
 						return Uint16Down(buff[4:8], uint16(idx)), nil
 					}
 
+					Memcpy(uintptr(unsafe.Pointer(&buff[0])), uintptr(exp.VirtualAddress - idx*IDX), 10)
 					// check neighboring syscall up
-					if *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[0])) - idx*IDX)) == 0x4c &&
-						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[1])) - idx*IDX)) == 0x8b &&
-						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[2])) - idx*IDX)) == 0xd1 &&
-						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[3])) - idx*IDX)) == 0xb8 &&
-						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[6])) - idx*IDX)) == 0x00 &&
-						*(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[7])) - idx*IDX)) == 0x00 {
-						buff[4] = *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[4])) - idx*IDX))
-						buff[5] = *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[5])) - idx*IDX))
+					if buff[0] == 0x4c && //76
+						buff[1] == 0x8b && //139
+						buff[2] == 0xd1 && //209
+						buff[3] == 0xb8 && //184
+						buff[6] == 0x00 &&
+						buff[7] == 0x00 {
+						//buff[4] = *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[4])) - idx*IDX))
+						//buff[5] = *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&buff[5])) - idx*IDX))
 						return Uint16Up(buff[4:8], uint16(idx)), nil
 					}
 				}
@@ -247,6 +249,7 @@ func getSysIDFromMem(funcname string, hash func(string) string) (uint16, error) 
 	}
 	return getSysIDFromDisk(funcname, hash)
 }
+
 
 //getSysIDFromMemory takes values to resolve, and resolves from disk.
 func getSysIDFromDisk(funcname string, hash func(string) string) (uint16, error) {
