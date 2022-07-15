@@ -87,6 +87,9 @@ sysid := newWhisper.GetSysid("4942059d")
 
 //RefleXXion
 gabh.KDllunhook()
+
+//getssnbynameexcept
+gabh.GetSSNByNameExcept()
 ```
 
 ## Usage
