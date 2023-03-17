@@ -90,6 +90,14 @@ gabh.KDllunhook()
 
 //getssnbynameexcept
 gabh.GetSSNByNameExcept()
+
+//proxycall
+proxycall.ProxyCall()
+
+https://github.com/paranoidninja/Proxy-Function-Calls-For-ETwTI
+
+https://0xdarkvortex.dev/hiding-in-plainsight/
+
 ```
 
 ## Usage
