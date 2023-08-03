@@ -26,10 +26,10 @@ func main() {
 	var allocatedAddress uintptr
 	allocatedsize := uintptr(100)
 
-	proxycall.ProxyCall(
+	proxycall.ProxyCall(//总传参数量太多可能会报错
 		syscall.NewLazyDLL("ntdll.dll").
-			NewProc("NtAllocateVirtualMemory").Addr(), //function Address
-		uintptr(0xffffffffffffffff),                //ProcessHandle
+			NewProc("NtAllocateVirtualMemory").Addr(), //function Address第一个参数为function的地址
+		uintptr(0xffffffffffffffff),                //ProcessHandle第二个参数开始传入需要的参数即可
 		uintptr(unsafe.Pointer(&allocatedAddress)), //*BaseAddress
 		uintptr(0),                              //ZeroBits
 		uintptr(unsafe.Pointer(&allocatedsize)), //RegionSize
